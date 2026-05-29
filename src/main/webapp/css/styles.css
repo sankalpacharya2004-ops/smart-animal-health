@@ -99,6 +99,8 @@ body {
 .app-container {
     display: flex;
     min-height: 100vh;
+    opacity: 0; /* Hide by default until authenticated and authorized */
+    transition: opacity 0.25s ease-in-out;
 }
 
 /* Sidebar Navigation */
@@ -146,6 +148,8 @@ body {
     flex-direction: column;
     gap: 8px;
     flex-grow: 1;
+    opacity: 0; /* Hide by default to prevent visual flickering during async auth check */
+    transition: opacity 0.15s ease-in-out;
 }
 
 .nav-link {

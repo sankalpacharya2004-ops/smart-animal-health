@@ -76,6 +76,12 @@ async function checkAuth(redirectOnFail = true, redirectOnSuccess = false) {
                 document.querySelectorAll('.doctor-only').forEach(el => el.style.display = 'none');
             }
 
+            // Reveal the navigation menu after elements have been filtered to avoid visual flickering
+            const navMenu = document.querySelector('.nav-menu');
+            if (navMenu) {
+                navMenu.style.opacity = '1';
+            }
+
             if (redirectOnSuccess) {
                 if (data.user.role === 'Doctor') {
                     window.location.href = 'doctor_dashboard.html';

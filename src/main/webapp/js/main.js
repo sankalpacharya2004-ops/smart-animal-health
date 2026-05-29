@@ -36,6 +36,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+    // Reveal app container now that user is verified and authorized to view this page
+    const appContainer = document.querySelector('.app-container');
+    if (appContainer) {
+        appContainer.style.opacity = '1';
+    }
+
     // Page routers
     if (path.endsWith('dashboard.html')) {
         initDashboard();
