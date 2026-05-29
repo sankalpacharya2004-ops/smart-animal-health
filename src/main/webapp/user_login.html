@@ -84,7 +84,10 @@
     <script src="js/auth.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
-            await checkAuth(false, true); // Redirect if already authenticated
+            const user = await checkAuth(false, false); // Check without auto-redirecting
+            if (user && user.role === 'User') {
+                window.location.href = 'dashboard.html';
+            }
         });
 
         function switchAuthTab(type) {

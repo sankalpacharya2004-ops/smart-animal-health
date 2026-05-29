@@ -64,6 +64,13 @@ async function checkAuth(redirectOnFail = true, redirectOnSuccess = false) {
             } else if (data.user.role === 'Doctor') {
                 document.querySelectorAll('.doctor-only').forEach(el => el.style.display = 'block');
                 document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
+                document.querySelectorAll('.nav-link').forEach(el => {
+                    const href = el.getAttribute('href');
+                    if (href === 'dashboard.html') {
+                        const li = el.closest('li');
+                        if (li) li.style.display = 'none';
+                    }
+                });
             } else {
                 document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
                 document.querySelectorAll('.doctor-only').forEach(el => el.style.display = 'none');

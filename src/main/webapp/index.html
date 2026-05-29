@@ -130,7 +130,7 @@
     <script>
         // Check active session on load
         document.addEventListener('DOMContentLoaded', async () => {
-            await checkAuth(false, true); // Redirect authenticated sessions to dashboards
+            await checkAuth(false, false); // Do not auto-redirect from gateway selector
         });
     </script>
 </body>
