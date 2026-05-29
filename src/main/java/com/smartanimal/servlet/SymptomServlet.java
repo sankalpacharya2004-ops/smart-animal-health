@@ -71,7 +71,7 @@ public class SymptomServlet extends HttpServlet {
             }
 
             // Secure ownership check
-            if (!"Admin".equalsIgnoreCase(user.getRole()) && (animal.getUserId() == null || animal.getUserId() != user.getUserId())) {
+            if (!"Admin".equalsIgnoreCase(user.getRole()) && !"Doctor".equalsIgnoreCase(user.getRole()) && (animal.getUserId() == null || animal.getUserId() != user.getUserId())) {
                 response.setStatus(HttpServletResponse.SC_FORBIDDEN);
                 JsonObject error = new JsonObject();
                 error.addProperty("success", false);
@@ -118,7 +118,7 @@ public class SymptomServlet extends HttpServlet {
             return;
         }
 
-        if (!"Admin".equalsIgnoreCase(user.getRole()) && (animal.getUserId() == null || animal.getUserId() != user.getUserId())) {
+        if (!"Admin".equalsIgnoreCase(user.getRole()) && !"Doctor".equalsIgnoreCase(user.getRole()) && (animal.getUserId() == null || animal.getUserId() != user.getUserId())) {
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
             jsonResponse.addProperty("success", false);
             jsonResponse.addProperty("message", "Forbidden. You do not own this animal's records.");

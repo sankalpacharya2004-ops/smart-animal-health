@@ -34,7 +34,7 @@ public class AssessmentServlet extends HttpServlet {
         return (User) session.getAttribute("user");
     }
 
-    // Get health assessments (by animalId or symptomId)
+    // Get health assessments (by animalId, symptomId, pending=true, highRisk=true, or all for admin/doctor)
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         response.setContentType("application/json");
@@ -45,9 +45,33 @@ public class AssessmentServlet extends HttpServlet {
 
         String animalIdParam = request.getParameter("animalId");
         String symptomIdParam = request.getParameter("symptomId");
+        String pendingParam = request.getParameter("pending");
+        String highRiskParam = request.getParameter("highRisk");
         JsonObject jsonResponse = new JsonObject();
 
-        if (animalIdParam != null) {
+        if (pendingParam != null && Boolean.parseBoolean(pendingParam)) {
+            if (!"Admin".equalsIgnoreCase(user.getRole()) && !"Doctor".equalsIgnoreCase(user.getRole())) {
+                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                jsonResponse.addProperty("success", false);
+                jsonResponse.addProperty("message", "Forbidden. Only Doctors or Admins can view pending consultations.");
+                response.getWriter().write(gson.toJson(jsonResponse));
+                return;
+            }
+            List<HealthAssessment> list = assessmentDAO.getPendingConsultations();
+            response.getWriter().write(gson.toJson(list));
+        }
+        else if (highRiskParam != null && Boolean.parseBoolean(highRiskParam)) {
+            if (!"Admin".equalsIgnoreCase(user.getRole()) && !"Doctor".equalsIgnoreCase(user.getRole())) {
+                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                jsonResponse.addProperty("success", false);
+                jsonResponse.addProperty("message", "Forbidden. Only Doctors or Admins can view active high-risk cases.");
+                response.getWriter().write(gson.toJson(jsonResponse));
+                return;
+            }
+            List<HealthAssessment> list = assessmentDAO.getActiveHighRiskCases();
+            response.getWriter().write(gson.toJson(list));
+        }
+        else if (animalIdParam != null) {
             try {
                 int animalId = Integer.parseInt(animalIdParam);
                 Animal animal = animalDAO.getAnimalById(animalId);
@@ -59,8 +83,8 @@ public class AssessmentServlet extends HttpServlet {
                     return;
                 }
 
-                // Check ownership
-                if (!"Admin".equalsIgnoreCase(user.getRole()) && (animal.getUserId() == null || animal.getUserId() != user.getUserId())) {
+                // Check ownership (Admin and Doctor bypass this)
+                if (!"Admin".equalsIgnoreCase(user.getRole()) && !"Doctor".equalsIgnoreCase(user.getRole()) && (animal.getUserId() == null || animal.getUserId() != user.getUserId())) {
                     response.setStatus(HttpServletResponse.SC_FORBIDDEN);
                     jsonResponse.addProperty("success", false);
                     jsonResponse.addProperty("message", "Forbidden. You do not own this animal's records.");
@@ -80,7 +104,7 @@ public class AssessmentServlet extends HttpServlet {
                 HealthAssessment assessment = assessmentDAO.getAssessmentBySymptomId(symptomId);
                 if (assessment != null) {
                     Animal animal = animalDAO.getAnimalById(assessment.getAnimalId());
-                    if (!"Admin".equalsIgnoreCase(user.getRole()) && (animal == null || animal.getUserId() == null || animal.getUserId() != user.getUserId())) {
+                    if (!"Admin".equalsIgnoreCase(user.getRole()) && !"Doctor".equalsIgnoreCase(user.getRole()) && (animal == null || animal.getUserId() == null || animal.getUserId() != user.getUserId())) {
                         response.setStatus(HttpServletResponse.SC_FORBIDDEN);
                         jsonResponse.addProperty("success", false);
                         jsonResponse.addProperty("message", "Forbidden. You do not own this animal's records.");
@@ -99,7 +123,7 @@ public class AssessmentServlet extends HttpServlet {
             }
         } 
         else {
-            if ("Admin".equalsIgnoreCase(user.getRole())) {
+            if ("Admin".equalsIgnoreCase(user.getRole()) || "Doctor".equalsIgnoreCase(user.getRole())) {
                 List<HealthAssessment> list = assessmentDAO.getAllAssessments();
                 response.getWriter().write(gson.toJson(list));
             } else {
@@ -108,6 +132,59 @@ public class AssessmentServlet extends HttpServlet {
                 jsonResponse.addProperty("message", "Missing query parameter: animalId or symptomId.");
                 response.getWriter().write(gson.toJson(jsonResponse));
             }
+        }
+    }
+
+    // Save clinical override
+    @Override
+    protected void doPut(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+
+        User user = getAuthenticatedUser(request, response);
+        if (user == null) return;
+
+        JsonObject jsonResponse = new JsonObject();
+
+        if (!"Admin".equalsIgnoreCase(user.getRole()) && !"Doctor".equalsIgnoreCase(user.getRole())) {
+            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+            jsonResponse.addProperty("success", false);
+            jsonResponse.addProperty("message", "Forbidden. Only Doctors or Admins can perform clinical overrides.");
+            response.getWriter().write(gson.toJson(jsonResponse));
+            return;
+        }
+
+        try {
+            JsonObject body = gson.fromJson(request.getReader(), JsonObject.class);
+            if (body == null || !body.has("assessmentId") || !body.has("doctorDiagnosis")) {
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                jsonResponse.addProperty("success", false);
+                jsonResponse.addProperty("message", "Invalid request. Missing assessmentId or doctorDiagnosis.");
+                response.getWriter().write(gson.toJson(jsonResponse));
+                return;
+            }
+
+            int assessmentId = body.get("assessmentId").getAsInt();
+            String doctorDiagnosis = body.get("doctorDiagnosis").getAsString();
+            String treatmentNotes = body.has("treatmentNotes") ? body.get("treatmentNotes").getAsString() : "";
+            String prescription = body.has("prescription") ? body.get("prescription").getAsString() : "";
+            int doctorId = user.getUserId();
+
+            boolean success = assessmentDAO.updateDoctorOverride(assessmentId, doctorDiagnosis, treatmentNotes, prescription, doctorId);
+            if (success) {
+                jsonResponse.addProperty("success", true);
+                jsonResponse.addProperty("message", "Clinical override saved successfully.");
+            } else {
+                response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                jsonResponse.addProperty("success", false);
+                jsonResponse.addProperty("message", "Failed to save clinical override. Assessment might not exist.");
+            }
+            response.getWriter().write(gson.toJson(jsonResponse));
+        } catch (Exception e) {
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            jsonResponse.addProperty("success", false);
+            jsonResponse.addProperty("message", "Malformed JSON request body.");
+            response.getWriter().write(gson.toJson(jsonResponse));
         }
     }
 }

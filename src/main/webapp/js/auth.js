@@ -53,10 +53,30 @@ async function checkAuth(redirectOnFail = true, redirectOnSuccess = false) {
 
             if (data.user.role === 'Admin') {
                 document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
+                document.querySelectorAll('.doctor-only').forEach(el => el.style.display = 'none');
+                document.querySelectorAll('.nav-link').forEach(el => {
+                    const href = el.getAttribute('href');
+                    if (href === 'dashboard.html' || href === 'animals.html' || href === 'symptoms.html' || href === 'vaccinations.html') {
+                        const li = el.closest('li');
+                        if (li) li.style.display = 'none';
+                    }
+                });
+            } else if (data.user.role === 'Doctor') {
+                document.querySelectorAll('.doctor-only').forEach(el => el.style.display = 'block');
+                document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
+            } else {
+                document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
+                document.querySelectorAll('.doctor-only').forEach(el => el.style.display = 'none');
             }
 
             if (redirectOnSuccess) {
-                window.location.href = 'dashboard.html';
+                if (data.user.role === 'Doctor') {
+                    window.location.href = 'doctor_dashboard.html';
+                } else if (data.user.role === 'Admin') {
+                    window.location.href = 'caretakers.html';
+                } else {
+                    window.location.href = 'dashboard.html';
+                }
             }
             return data.user;
         } else {

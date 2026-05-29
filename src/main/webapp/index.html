@@ -1,156 +1,137 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart Animal Health Assistant - Portal</title>
+    <title>Smart Animal Health - Portal Gateway</title>
     <link rel="stylesheet" href="css/styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .portal-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            width: 100%;
+            max-width: 1100px;
+            margin-top: 3rem;
+        }
+        .portal-card {
+            padding: 2.5rem 2rem;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.2rem;
+            transition: var(--transition-smooth);
+            cursor: pointer;
+        }
+        .portal-card:hover {
+            transform: translateY(-8px);
+            border-color: var(--accent-cyan);
+            box-shadow: 0 12px 40px rgba(6, 182, 212, 0.15);
+        }
+        .portal-icon {
+            width: 70px;
+            height: 70px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            margin-bottom: 0.5rem;
+        }
+        .portal-icon.cyan {
+            background: rgba(6, 182, 212, 0.1);
+            color: var(--accent-cyan);
+            border: 1px solid rgba(6, 182, 212, 0.2);
+        }
+        .portal-icon.emerald {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--accent-emerald);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+        .portal-icon.rose {
+            background: rgba(244, 63, 94, 0.1);
+            color: var(--accent-rose);
+            border: 1px solid rgba(244, 63, 94, 0.2);
+        }
+        .portal-title {
+            font-family: var(--font-heading);
+            font-size: 22px;
+            font-weight: 700;
+            color: #fff;
+        }
+        .portal-desc {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            flex-grow: 1;
+        }
+    </style>
 </head>
-
-<body class="auth-page">
+<body class="auth-page" style="flex-direction: column; justify-content: center; padding: 2rem;">
 
     <!-- Ambient glowing backgrounds -->
-    <div class="ambient-glow glow-top-left"></div>
-    <div class="ambient-glow glow-bottom-right"></div>
+    <div class="ambient-glow" style="background: radial-gradient(circle, var(--accent-blue) 0%, transparent 60%); top: -200px; left: 10%;"></div>
+    <div class="ambient-glow" style="background: radial-gradient(circle, var(--accent-cyan) 0%, transparent 60%); bottom: -200px; right: 10%;"></div>
 
-    <div class="glass-panel auth-container">
-        <div class="auth-header">
-            <div class="auth-logo">
-                <i class="fas fa-heart-pulse"></i>
-            </div>
-            <h1 class="auth-title">Animal Health Portal</h1>
-            <p class="auth-subtitle">Smart health logs, schedule vaccines &amp; AI-driven risk alerts.</p>
+    <!-- Header Section -->
+    <div class="auth-header" style="margin-bottom: 0;">
+        <div class="auth-logo">
+            <i class="fas fa-heart-pulse"></i>
         </div>
-
-        <!-- Auth Tabs -->
-        <div class="auth-tabs">
-            <div id="tab-login" class="auth-tab active" onclick="switchAuthTab('login')">Login</div>
-            <div id="tab-signup" class="auth-tab" onclick="switchAuthTab('signup')">Sign Up</div>
-        </div>
-
-        <!-- Login Form -->
-        <div id="form-login-wrapper" class="auth-form-wrapper active">
-            <form id="login-form">
-                <div class="form-group" style="margin-bottom: 1.2rem;">
-                    <label for="login-username">Username</label>
-                    <input type="text" id="login-username" required placeholder="Enter username">
-                </div>
-                <div class="form-group" style="margin-bottom: 1.8rem;">
-                    <label for="login-password">Password</label>
-                    <input type="password" id="login-password" required placeholder="Enter password">
-                </div>
-                <button type="submit" class="btn-primary" style="width: 100%; justify-content: center; padding: 12px;">
-                    <i class="fas fa-right-to-bracket"></i> Authenticate
-                </button>
-            </form>
-        </div>
-
-        <!-- Signup Form -->
-        <div id="form-signup-wrapper" class="auth-form-wrapper">
-            <form id="signup-form">
-                <div class="form-group" style="margin-bottom: 1rem;">
-                    <label for="signup-username">Username</label>
-                    <input type="text" id="signup-username" required placeholder="Choose a username">
-                </div>
-                <div class="form-group" style="margin-bottom: 1rem;">
-                    <label for="signup-fullname">Full Name</label>
-                    <input type="text" id="signup-fullname" required placeholder="Your full name">
-                </div>
-                <div class="form-group" style="margin-bottom: 1rem;">
-                    <label for="signup-email">Email Address</label>
-                    <input type="email" id="signup-email" required placeholder="yourname@domain.com">
-                </div>
-                <div class="form-group" style="margin-bottom: 1.8rem;">
-                    <label for="signup-password">Password</label>
-                    <input type="password" id="signup-password" required placeholder="Choose a secure password">
-                </div>
-                <button type="submit" class="btn-primary" style="width: 100%; justify-content: center; padding: 12px;">
-                    <i class="fas fa-user-plus"></i> Initialize Account
-                </button>
-            </form>
-        </div>
+        <h1 class="auth-title" style="font-size: 32px;">Smart Animal Health Assistant</h1>
+        <p class="auth-subtitle" style="font-size: 16px;">Welcome to the clinic management portal. Choose your destination portal below.</p>
     </div>
 
-    <!-- Script loading -->
+    <!-- Portal Cards Selector Grid -->
+    <div class="portal-grid">
+        
+        <!-- Veterinary Portal Card -->
+        <div class="glass-panel portal-card" onclick="window.location.href='doctor_login.html'">
+            <div class="portal-icon cyan">
+                <i class="fas fa-user-doctor"></i>
+            </div>
+            <h3 class="portal-title">Veterinary Portal</h3>
+            <p class="portal-desc">For clinical staff. Review symptom assessments, log overrides, write prescriptions, and record completed vaccinations.</p>
+            <button class="btn-primary" style="width: 100%; justify-content: center;">
+                <i class="fas fa-right-to-bracket"></i> Vet Access
+            </button>
+        </div>
+
+        <!-- Caretaker Portal Card -->
+        <div class="glass-panel portal-card" onclick="window.location.href='user_login.html'">
+            <div class="portal-icon emerald">
+                <i class="fas fa-paw"></i>
+            </div>
+            <h3 class="portal-title">Caretaker Portal</h3>
+            <p class="portal-desc">For animal owners and caretakers. Register pets, log daily observations, run rules-based triage, and check vaccination dates.</p>
+            <button class="btn-primary" style="width: 100%; justify-content: center; background: linear-gradient(135deg, var(--accent-emerald) 0%, var(--accent-blue) 100%); box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);">
+                <i class="fas fa-right-to-bracket"></i> Caretaker Access
+            </button>
+        </div>
+
+        <!-- Admin Portal Card -->
+        <div class="glass-panel portal-card" onclick="window.location.href='admin_login.html'">
+            <div class="portal-icon rose">
+                <i class="fas fa-user-gear"></i>
+            </div>
+            <h3 class="portal-title">Admin Portal</h3>
+            <p class="portal-desc">For system administrators. Manage caretaker registrations, demote/promote staff, and audit system-wide clinic transactions.</p>
+            <button class="btn-primary" style="width: 100%; justify-content: center; background: linear-gradient(135deg, var(--accent-rose) 0%, var(--accent-blue) 100%); box-shadow: 0 4px 15px rgba(244, 63, 94, 0.3);">
+                <i class="fas fa-right-to-bracket"></i> Admin Access
+            </button>
+        </div>
+
+    </div>
+
+    <!-- Scripts -->
     <script src="js/auth.js"></script>
     <script>
-        // Check session before showing login screen
+        // Check active session on load
         document.addEventListener('DOMContentLoaded', async () => {
-            await checkAuth(false, true); // Don't redirect on fail, redirect on success to dashboard
-        });
-
-        function switchAuthTab(type) {
-            const tabLogin = document.getElementById('tab-login');
-            const tabSignup = document.getElementById('tab-signup');
-            const formLogin = document.getElementById('form-login-wrapper');
-            const formSignup = document.getElementById('form-signup-wrapper');
-
-            if (type === 'login') {
-                tabLogin.classList.add('active');
-                tabSignup.classList.remove('active');
-                formLogin.classList.add('active');
-                formSignup.classList.remove('active');
-            } else {
-                tabSignup.classList.add('active');
-                tabLogin.classList.remove('active');
-                formSignup.classList.add('active');
-                formLogin.classList.remove('active');
-            }
-        }
-
-        // Form bindings
-        document.getElementById('login-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const username = document.getElementById('login-username').value;
-            const password = document.getElementById('login-password').value;
-
-            try {
-                const res = await fetch(`${AUTH_API}?action=login`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: `username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`
-                });
-                const data = await res.json();
-
-                if (data.success) {
-                    showToast(data.message, 'success');
-                    setTimeout(() => window.location.href = 'dashboard.html', 800);
-                } else {
-                    showToast(data.message, 'error');
-                }
-            } catch (err) {
-                showToast('Authentication server error.', 'error');
-            }
-        });
-
-        document.getElementById('signup-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const username = document.getElementById('signup-username').value;
-            const fullName = document.getElementById('signup-fullname').value;
-            const email = document.getElementById('signup-email').value;
-            const password = document.getElementById('signup-password').value;
-
-            try {
-                const res = await fetch(`${AUTH_API}?action=signup`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: `username=${encodeURIComponent(username)}&fullName=${encodeURIComponent(fullName)}&email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`
-                });
-                const data = await res.json();
-
-                if (data.success) {
-                    showToast(data.message, 'success');
-                    setTimeout(() => window.location.href = 'dashboard.html', 800);
-                } else {
-                    showToast(data.message, 'error');
-                }
-            } catch (err) {
-                showToast('Registration server error.', 'error');
-            }
+            await checkAuth(false, true); // Redirect authenticated sessions to dashboards
         });
     </script>
 </body>
-
 </html>

@@ -18,7 +18,7 @@ CREATE TABLE users (
     password_hash VARCHAR(255) NOT NULL,
     full_name VARCHAR(100) NULL,
     email VARCHAR(100) UNIQUE NULL,
-    role ENUM('Admin', 'User') DEFAULT 'User',
+    role ENUM('Admin', 'Doctor', 'User') DEFAULT 'User',
     created_date DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -61,8 +61,13 @@ CREATE TABLE health_assessments (
     possible_condition VARCHAR(200) NULL,
     recommended_action TEXT NULL,
     assessment_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    doctor_diagnosis VARCHAR(200) NULL,
+    treatment_notes TEXT NULL,
+    prescription TEXT NULL,
+    doctor_id INT NULL,
     FOREIGN KEY (symptom_id) REFERENCES symptoms(symptom_id) ON DELETE CASCADE,
-    FOREIGN KEY (animal_id) REFERENCES animals(animal_id) ON DELETE CASCADE
+    FOREIGN KEY (animal_id) REFERENCES animals(animal_id) ON DELETE CASCADE,
+    FOREIGN KEY (doctor_id) REFERENCES users(user_id) ON DELETE SET NULL
 );
 
 -- Table 4: vaccinations
@@ -80,11 +85,12 @@ CREATE TABLE vaccinations (
 
 -- Insert Demo/Seed Data
 -- Passwords are hashed using SHA-256
--- 'admin123' -> 240aa2479639e1db765b185e177fee203d65a51e60a319f3e4e46d048e9d1643
--- 'password123' -> ef92b778bafe4de16740e56502044788a1090147e9268f7f4d7f57c2a704e84b
+-- 'admin123' -> 240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9
+-- 'password123' -> ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f
 INSERT INTO users (username, password_hash, full_name, email, role) VALUES
-('admin', '240aa2479639e1db765b185e177fee203d65a51e60a319f3e4e46d048e9d1643', 'System Administrator', 'admin@animalhealth.com', 'Admin'),
-('john_doe', 'ef92b778bafe4de16740e56502044788a1090147e9268f7f4d7f57c2a704e84b', 'John Doe', 'john@example.com', 'User');
+('admin', '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9', 'System Administrator', 'admin@animalhealth.com', 'Admin'),
+('doctor', 'ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f', 'Dr. Smith', 'smith@animalhealth.com', 'Doctor'),
+('john_doe', 'ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f', 'John Doe', 'john@example.com', 'User');
 
 -- Insert animals for John Doe (user_id = 2)
 INSERT INTO animals (user_id, name, species, breed, age, weight, animal_type, owner_name, contact_number) VALUES

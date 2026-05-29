@@ -48,7 +48,7 @@ public class AnimalServlet extends HttpServlet {
                 Animal animal = animalDAO.getAnimalById(id);
                 if (animal != null) {
                     // Safety check: standard users can only view their own animals
-                    if (!"Admin".equalsIgnoreCase(user.getRole()) && (animal.getUserId() == null || animal.getUserId() != user.getUserId())) {
+                    if (!"Admin".equalsIgnoreCase(user.getRole()) && !"Doctor".equalsIgnoreCase(user.getRole()) && (animal.getUserId() == null || animal.getUserId() != user.getUserId())) {
                         response.setStatus(HttpServletResponse.SC_FORBIDDEN);
                         JsonObject error = new JsonObject();
                         error.addProperty("success", false);
@@ -69,7 +69,7 @@ public class AnimalServlet extends HttpServlet {
             }
         } else {
             List<Animal> list;
-            if ("Admin".equalsIgnoreCase(user.getRole())) {
+            if ("Admin".equalsIgnoreCase(user.getRole()) || "Doctor".equalsIgnoreCase(user.getRole())) {
                 list = animalDAO.getAllAnimals();
             } else {
                 list = animalDAO.getAnimalsByUserId(user.getUserId());
@@ -114,7 +114,7 @@ public class AnimalServlet extends HttpServlet {
                 response.setStatus(HttpServletResponse.SC_NOT_FOUND);
                 jsonResponse.addProperty("success", false);
                 jsonResponse.addProperty("message", "Animal not found for update.");
-            } else if (!"Admin".equalsIgnoreCase(user.getRole()) && (existing.getUserId() == null || existing.getUserId() != user.getUserId())) {
+            } else if (!"Admin".equalsIgnoreCase(user.getRole()) && !"Doctor".equalsIgnoreCase(user.getRole()) && (existing.getUserId() == null || existing.getUserId() != user.getUserId())) {
                 response.setStatus(HttpServletResponse.SC_FORBIDDEN);
                 jsonResponse.addProperty("success", false);
                 jsonResponse.addProperty("message", "Forbidden. You do not own this profile.");
@@ -181,7 +181,7 @@ public class AnimalServlet extends HttpServlet {
                 response.setStatus(HttpServletResponse.SC_NOT_FOUND);
                 jsonResponse.addProperty("success", false);
                 jsonResponse.addProperty("message", "Animal not found.");
-            } else if (!"Admin".equalsIgnoreCase(user.getRole()) && (existing.getUserId() == null || existing.getUserId() != user.getUserId())) {
+            } else if (!"Admin".equalsIgnoreCase(user.getRole()) && !"Doctor".equalsIgnoreCase(user.getRole()) && (existing.getUserId() == null || existing.getUserId() != user.getUserId())) {
                 response.setStatus(HttpServletResponse.SC_FORBIDDEN);
                 jsonResponse.addProperty("success", false);
                 jsonResponse.addProperty("message", "Forbidden. You do not own this profile.");

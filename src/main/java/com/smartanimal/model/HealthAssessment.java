@@ -14,6 +14,13 @@ public class HealthAssessment {
     private String animalName;
     private String ownerName;
 
+    // Doctor override fields
+    private String doctorDiagnosis;
+    private String treatmentNotes;
+    private String prescription;
+    private Integer doctorId;
+    private String doctorName;
+
     public HealthAssessment() {}
 
     public HealthAssessment(int assessmentId, int symptomId, int animalId, String riskLevel, String possibleCondition, String recommendedAction, Timestamp assessmentDate) {
@@ -96,5 +103,45 @@ public class HealthAssessment {
 
     public void setAssessmentDate(Timestamp assessmentDate) {
         this.assessmentDate = assessmentDate;
+    }
+
+    public String getDoctorDiagnosis() {
+        return doctorDiagnosis;
+    }
+
+    public void setDoctorDiagnosis(String doctorDiagnosis) {
+        this.doctorDiagnosis = doctorDiagnosis;
+    }
+
+    public String getTreatmentNotes() {
+        return treatmentNotes;
+    }
+
+    public void setTreatmentNotes(String treatmentNotes) {
+        this.treatmentNotes = treatmentNotes;
+    }
+
+    public String getPrescription() {
+        return prescription;
+    }
+
+    public void setPrescription(String prescription) {
+        this.prescription = prescription;
+    }
+
+    public Integer getDoctorId() {
+        return doctorId;
+    }
+
+    public void setDoctorId(Integer doctorId) {
+        this.doctorId = doctorId;
+    }
+
+    public String getDoctorName() {
+        return doctorName;
+    }
+
+    public void setDoctorName(String doctorName) {
+        this.doctorName = doctorName;
     }
 }

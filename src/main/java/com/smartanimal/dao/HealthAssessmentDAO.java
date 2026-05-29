@@ -16,6 +16,36 @@ public class HealthAssessmentDAO {
         assessment.setPossibleCondition(rs.getString("possible_condition"));
         assessment.setRecommendedAction(rs.getString("recommended_action"));
         assessment.setAssessmentDate(rs.getTimestamp("assessment_date"));
+        
+        assessment.setDoctorDiagnosis(rs.getString("doctor_diagnosis"));
+        assessment.setTreatmentNotes(rs.getString("treatment_notes"));
+        assessment.setPrescription(rs.getString("prescription"));
+        
+        int docId = rs.getInt("doctor_id");
+        if (rs.wasNull()) {
+            assessment.setDoctorId(null);
+        } else {
+            assessment.setDoctorId(docId);
+        }
+
+        try {
+            assessment.setAnimalName(rs.getString("animal_name"));
+        } catch (SQLException e) {
+            // Ignore if column not in result set
+        }
+
+        try {
+            assessment.setOwnerName(rs.getString("owner_name"));
+        } catch (SQLException e) {
+            // Ignore if column not in result set
+        }
+
+        try {
+            assessment.setDoctorName(rs.getString("doctor_name"));
+        } catch (SQLException e) {
+            // Ignore if column not in result set
+        }
+
         return assessment;
     }
 
@@ -45,9 +75,30 @@ public class HealthAssessmentDAO {
         return false;
     }
 
+    public boolean updateDoctorOverride(int assessmentId, String diagnosis, String notes, String prescription, int doctorId) {
+        String sql = "UPDATE health_assessments SET doctor_diagnosis = ?, treatment_notes = ?, prescription = ?, doctor_id = ? WHERE assessment_id = ?";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, diagnosis);
+            stmt.setString(2, notes);
+            stmt.setString(3, prescription);
+            stmt.setInt(4, doctorId);
+            stmt.setInt(5, assessmentId);
+            return stmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
     public List<HealthAssessment> getAssessmentsByAnimalId(int animalId) {
         List<HealthAssessment> list = new ArrayList<>();
-        String sql = "SELECT * FROM health_assessments WHERE animal_id = ? ORDER BY assessment_date DESC";
+        String sql = "SELECT h.*, a.name AS animal_name, a.owner_name, u.full_name AS doctor_name " +
+                     "FROM health_assessments h " +
+                     "JOIN animals a ON h.animal_id = a.animal_id " +
+                     "LEFT JOIN users u ON h.doctor_id = u.user_id " +
+                     "WHERE h.animal_id = ? " +
+                     "ORDER BY h.assessment_date DESC";
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, animalId);
@@ -63,7 +114,11 @@ public class HealthAssessmentDAO {
     }
 
     public HealthAssessment getAssessmentById(int assessmentId) {
-        String sql = "SELECT * FROM health_assessments WHERE assessment_id = ?";
+        String sql = "SELECT h.*, a.name AS animal_name, a.owner_name, u.full_name AS doctor_name " +
+                     "FROM health_assessments h " +
+                     "JOIN animals a ON h.animal_id = a.animal_id " +
+                     "LEFT JOIN users u ON h.doctor_id = u.user_id " +
+                     "WHERE h.assessment_id = ?";
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, assessmentId);
@@ -79,7 +134,11 @@ public class HealthAssessmentDAO {
     }
 
     public HealthAssessment getAssessmentBySymptomId(int symptomId) {
-        String sql = "SELECT * FROM health_assessments WHERE symptom_id = ?";
+        String sql = "SELECT h.*, a.name AS animal_name, a.owner_name, u.full_name AS doctor_name " +
+                     "FROM health_assessments h " +
+                     "JOIN animals a ON h.animal_id = a.animal_id " +
+                     "LEFT JOIN users u ON h.doctor_id = u.user_id " +
+                     "WHERE h.symptom_id = ?";
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, symptomId);
@@ -96,15 +155,56 @@ public class HealthAssessmentDAO {
 
     public List<HealthAssessment> getAllAssessments() {
         List<HealthAssessment> list = new ArrayList<>();
-        String sql = "SELECT h.*, a.name AS animal_name, a.owner_name FROM health_assessments h JOIN animals a ON h.animal_id = a.animal_id ORDER BY h.assessment_date DESC";
+        String sql = "SELECT h.*, a.name AS animal_name, a.owner_name, u.full_name AS doctor_name " +
+                     "FROM health_assessments h " +
+                     "JOIN animals a ON h.animal_id = a.animal_id " +
+                     "LEFT JOIN users u ON h.doctor_id = u.user_id " +
+                     "ORDER BY h.assessment_date DESC";
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql);
              ResultSet rs = stmt.executeQuery()) {
             while (rs.next()) {
-                HealthAssessment ha = extractAssessment(rs);
-                ha.setAnimalName(rs.getString("animal_name"));
-                ha.setOwnerName(rs.getString("owner_name"));
-                list.add(ha);
+                list.add(extractAssessment(rs));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+
+    public List<HealthAssessment> getPendingConsultations() {
+        List<HealthAssessment> list = new ArrayList<>();
+        String sql = "SELECT h.*, a.name AS animal_name, a.owner_name, u.full_name AS doctor_name " +
+                     "FROM health_assessments h " +
+                     "JOIN animals a ON h.animal_id = a.animal_id " +
+                     "LEFT JOIN users u ON h.doctor_id = u.user_id " +
+                     "WHERE h.doctor_diagnosis IS NULL " +
+                     "ORDER BY h.assessment_date DESC";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
+                list.add(extractAssessment(rs));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+
+    public List<HealthAssessment> getActiveHighRiskCases() {
+        List<HealthAssessment> list = new ArrayList<>();
+        String sql = "SELECT h.*, a.name AS animal_name, a.owner_name, u.full_name AS doctor_name " +
+                     "FROM health_assessments h " +
+                     "JOIN animals a ON h.animal_id = a.animal_id " +
+                     "LEFT JOIN users u ON h.doctor_id = u.user_id " +
+                     "WHERE h.risk_level = 'High' AND h.doctor_diagnosis IS NULL " +
+                     "ORDER BY h.assessment_date DESC";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
+                list.add(extractAssessment(rs));
             }
         } catch (SQLException e) {
             e.printStackTrace();

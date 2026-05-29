@@ -3,26 +3,58 @@
 
 document.addEventListener('DOMContentLoaded', async () => {
     // Ensure user is authenticated for app pages
-    const isLoginPage = window.location.pathname.endsWith('index.html') || window.location.pathname.endsWith('/') || window.location.pathname === '';
+    const path = window.location.pathname;
+    const isLoginPage = path.endsWith('index.html') || path.endsWith('/') || path.endsWith('') ||
+                        path.endsWith('user_login.html') || path.endsWith('doctor_login.html') || path.endsWith('admin_login.html');
     
     const user = await checkAuth(!isLoginPage, isLoginPage);
     if (!user && !isLoginPage) return; // Redirected
 
+    // Enforce role-based page access for authenticated users
+    if (user && !isLoginPage) {
+        if (user.role === 'Admin') {
+            const allowedPages = ['caretakers.html', 'assessments.html', 'audit_logs.html', 'medical_history.html'];
+            const currentPageAllowed = allowedPages.some(page => path.endsWith(page));
+            if (!currentPageAllowed) {
+                window.location.href = 'caretakers.html';
+                return;
+            }
+        } else if (user.role === 'Doctor') {
+            const allowedPages = ['doctor_dashboard.html', 'medical_history.html', 'animals.html', 'symptoms.html', 'vaccinations.html'];
+            const currentPageAllowed = allowedPages.some(page => path.endsWith(page));
+            if (!currentPageAllowed) {
+                window.location.href = 'doctor_dashboard.html';
+                return;
+            }
+        } else if (user.role === 'User') {
+            const allowedPages = ['dashboard.html', 'animals.html', 'symptoms.html', 'vaccinations.html', 'medical_history.html'];
+            const currentPageAllowed = allowedPages.some(page => path.endsWith(page));
+            if (!currentPageAllowed) {
+                window.location.href = 'dashboard.html';
+                return;
+            }
+        }
+    }
+
     // Page routers
-    if (window.location.pathname.endsWith('dashboard.html')) {
+    if (path.endsWith('dashboard.html')) {
         initDashboard();
-    } else if (window.location.pathname.endsWith('animals.html')) {
+    } else if (path.endsWith('animals.html')) {
         initAnimals();
-    } else if (window.location.pathname.endsWith('symptoms.html')) {
+    } else if (path.endsWith('symptoms.html')) {
         initSymptoms();
-    } else if (window.location.pathname.endsWith('vaccinations.html')) {
+    } else if (path.endsWith('vaccinations.html')) {
         initVaccinations();
-    } else if (window.location.pathname.endsWith('caretakers.html')) {
+    } else if (path.endsWith('caretakers.html')) {
         initCaretakers();
-    } else if (window.location.pathname.endsWith('assessments.html')) {
+    } else if (path.endsWith('assessments.html')) {
         initAssessments();
-    } else if (window.location.pathname.endsWith('audit_logs.html')) {
+    } else if (path.endsWith('audit_logs.html')) {
         initAuditLogs();
+    } else if (path.endsWith('doctor_dashboard.html')) {
+        initDoctorDashboard();
+    } else if (path.endsWith('medical_history.html')) {
+        initMedicalHistory();
     }
 });
 
@@ -767,3 +799,362 @@ async function initAuditLogs() {
         showToast("Error loading activity logs: " + err.message, "error");
     }
 }
+
+// ==========================================
+// 8. DOCTOR OVERWATCH DASHBOARD CONTROLLER
+// ==========================================
+let pendingAssessments = [];
+let pendingVaccinationsQueue = [];
+
+async function initDoctorDashboard() {
+    await loadDoctorDashboard();
+}
+
+async function loadDoctorDashboard() {
+    try {
+        // Load stats
+        const resStats = await fetch('/api/dashboard');
+        if (!resStats.ok) throw new Error("Failed to fetch dashboard data");
+        const stats = await resStats.json();
+
+        document.getElementById('stat-active-high-risk').textContent = stats.activeHighRiskCases || 0;
+        document.getElementById('stat-pending-consultations').textContent = stats.pendingConsultations || 0;
+        document.getElementById('stat-upcoming-vaccinations').textContent = stats.pendingVaccinations || 0;
+
+        // Load Pending Consultations Table
+        const resPending = await fetch('/api/assessments?pending=true');
+        pendingAssessments = await resPending.json();
+
+        const pendingTbody = document.getElementById('doctor-pending-table-body');
+        pendingTbody.innerHTML = '';
+
+        if (pendingAssessments.length > 0) {
+            pendingAssessments.forEach(item => {
+                const tr = document.createElement('tr');
+                const riskBadge = `<span class="badge ${item.riskLevel.toLowerCase()}">${item.riskLevel}</span>`;
+                const dateStr = item.assessmentDate.substring(0, 16);
+                
+                tr.innerHTML = `
+                    <td><strong>${item.animalName}</strong></td>
+                    <td>${item.ownerName || '—'}</td>
+                    <td>${riskBadge}</td>
+                    <td>${item.possibleCondition}</td>
+                    <td><small>${dateStr}</small></td>
+                    <td>
+                        <button class="btn-primary" onclick="openClinicalOverride(${item.assessmentId})" style="padding: 6px 12px; font-size:13px;">
+                            <i class="fas fa-file-signature"></i> Review
+                        </button>
+                    </td>
+                `;
+                pendingTbody.appendChild(tr);
+            });
+        } else {
+            pendingTbody.innerHTML = `<tr><td colspan="6" style="text-align:center;" class="text-secondary">No pending clinical reviews. All systems stable.</td></tr>`;
+        }
+
+        // Load Vaccination Queue
+        const resVac = await fetch('/api/vaccinations');
+        const allVac = await resVac.json();
+        pendingVaccinationsQueue = allVac.filter(v => v.status !== 'Completed');
+
+        const vacTbody = document.getElementById('doctor-vaccines-table-body');
+        vacTbody.innerHTML = '';
+
+        if (pendingVaccinationsQueue.length > 0) {
+            pendingVaccinationsQueue.forEach(item => {
+                const tr = document.createElement('tr');
+                const statusBadge = `<span class="badge ${item.status.toLowerCase()}">${item.status}</span>`;
+                
+                tr.innerHTML = `
+                    <td><strong>${item.animalName}</strong></td>
+                    <td>${item.ownerName || '—'}</td>
+                    <td><strong>${item.vaccineName}</strong></td>
+                    <td>${item.scheduledDate}</td>
+                    <td>${statusBadge}</td>
+                    <td>
+                        <button class="btn-primary" onclick="openVaccineAdmin(${item.vaccinationId})" style="padding: 6px 12px; font-size:13px; background: linear-gradient(135deg, var(--accent-emerald) 0%, var(--accent-blue) 100%); border:none; box-shadow:none;">
+                            <i class="fas fa-syringe"></i> Administer
+                        </button>
+                    </td>
+                `;
+                vacTbody.appendChild(tr);
+            });
+        } else {
+            vacTbody.innerHTML = `<tr><td colspan="6" style="text-align:center;" class="text-secondary">No pending vaccine administrations in queue.</td></tr>`;
+        }
+
+    } catch (err) {
+        showToast("Error loading vet dashboard: " + err.message, "error");
+    }
+}
+
+// Override Modal Triggers
+function openClinicalOverride(assessmentId) {
+    const item = pendingAssessments.find(a => a.assessmentId === assessmentId);
+    if (!item) return;
+
+    document.getElementById('override-assessment-id').value = item.assessmentId;
+    document.getElementById('override-animal-name').value = item.animalName;
+    document.getElementById('override-owner-name').value = item.ownerName || '—';
+    document.getElementById('override-auto-condition').value = item.possibleCondition;
+    
+    const riskContainer = document.getElementById('override-auto-risk');
+    riskContainer.innerHTML = `<span class="badge ${item.riskLevel.toLowerCase()}">${item.riskLevel}</span>`;
+    
+    document.getElementById('override-diagnosis').value = item.doctorDiagnosis || '';
+    document.getElementById('override-notes').value = item.treatmentNotes || '';
+    document.getElementById('override-prescription').value = item.prescription || '';
+
+    document.getElementById('override-modal').classList.add('active');
+}
+
+function closeOverrideModal() {
+    document.getElementById('override-modal').classList.remove('active');
+}
+
+async function saveClinicalOverride(event) {
+    event.preventDefault();
+    const payload = {
+        assessmentId: parseInt(document.getElementById('override-assessment-id').value),
+        doctorDiagnosis: document.getElementById('override-diagnosis').value,
+        treatmentNotes: document.getElementById('override-notes').value,
+        prescription: document.getElementById('override-prescription').value
+    };
+
+    try {
+        const res = await fetch('/api/assessments', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.success) {
+            showToast(data.message, 'success');
+            closeOverrideModal();
+            // Check if we are on doctor dashboard or medical history and refresh
+            if (window.location.pathname.endsWith('doctor_dashboard.html')) {
+                await loadDoctorDashboard();
+            } else if (window.location.pathname.endsWith('medical_history.html')) {
+                const select = document.getElementById('history-animal-select');
+                if (select) loadAnimalMedicalHistory(select.value);
+            }
+        } else {
+            showToast(data.message, 'error');
+        }
+    } catch (err) {
+        showToast("Error updating assessment: " + err.message, "error");
+    }
+}
+
+// Vaccine Modal Triggers
+function openVaccineAdmin(vaccinationId) {
+    const item = pendingVaccinationsQueue.find(v => v.vaccinationId === vaccinationId);
+    if (!item) return;
+
+    document.getElementById('vaccinate-id').value = item.vaccinationId;
+    document.getElementById('vaccinate-animal-name').value = item.animalName;
+    document.getElementById('vaccinate-name').value = item.vaccineName;
+    document.getElementById('vaccinate-date').value = new Date().toISOString().split('T')[0];
+    document.getElementById('vaccinate-notes').value = item.notes || '';
+
+    document.getElementById('vaccinate-modal').classList.add('active');
+}
+
+function closeVaccinateModal() {
+    document.getElementById('vaccinate-modal').classList.remove('active');
+}
+
+async function saveVaccineAdministration(event) {
+    event.preventDefault();
+    const payload = {
+        vaccinationId: parseInt(document.getElementById('vaccinate-id').value),
+        administeredDate: document.getElementById('vaccinate-date').value,
+        notes: document.getElementById('vaccinate-notes').value
+    };
+
+    try {
+        const res = await fetch('/api/vaccinations', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.success) {
+            showToast(data.message, 'success');
+            closeVaccinateModal();
+            if (window.location.pathname.endsWith('doctor_dashboard.html')) {
+                await loadDoctorDashboard();
+            }
+        } else {
+            showToast(data.message, 'error');
+        }
+    } catch (err) {
+        showToast("Error administering vaccination: " + err.message, "error");
+    }
+}
+
+// ==========================================
+// 9. MEDICAL HISTORY TIMELINE CONTROLLER
+// ==========================================
+let historyAssessments = [];
+
+async function initMedicalHistory() {
+    const select = document.getElementById('history-animal-select');
+    if (!select) return;
+
+    try {
+        const res = await fetch('/api/animals');
+        const animals = await res.json();
+        select.innerHTML = '<option value="">-- Choose an Animal --</option>';
+        animals.forEach(a => {
+            select.innerHTML += `<option value="${a.animalId}">${a.name} (${a.species})</option>`;
+        });
+    } catch (err) {
+        showToast("Error loading animals: " + err.message, "error");
+    }
+}
+
+async function loadAnimalMedicalHistory(animalId) {
+    const container = document.getElementById('history-details-container');
+    if (!container) return;
+
+    if (!animalId || animalId === '') {
+        container.style.display = 'none';
+        return;
+    }
+
+    try {
+        // 1. Fetch Profile
+        const resProfile = await fetch(`/api/animals?id=${animalId}`);
+        if (!resProfile.ok) throw new Error("Failed to fetch animal details");
+        const animal = await resProfile.json();
+
+        document.getElementById('info-name').textContent = animal.name;
+        document.getElementById('info-species').textContent = animal.species;
+        document.getElementById('info-breed').textContent = animal.breed || 'Unknown';
+        document.getElementById('info-age').textContent = animal.age != null ? animal.age + ' years' : 'N/A';
+        document.getElementById('info-weight').textContent = animal.weight != null ? animal.weight + ' kg' : 'N/A';
+        document.getElementById('info-type').textContent = animal.animalType;
+        document.getElementById('info-owner').textContent = animal.ownerName || 'Unknown';
+        document.getElementById('info-contact').textContent = animal.contactNumber || 'N/A';
+
+        // 2. Fetch Assessments Timeline
+        const resAssess = await fetch(`/api/assessments?animalId=${animalId}`);
+        const assessments = await resAssess.json();
+        historyAssessments = assessments;
+
+        const timeline = document.getElementById('clinical-timeline');
+        timeline.innerHTML = '';
+
+        if (assessments.length > 0) {
+            assessments.forEach(item => {
+                const li = document.createElement('li');
+                li.className = 'timeline-item';
+
+                // Determine risk style
+                let riskClass = 'low-risk';
+                if (item.riskLevel === 'High') riskClass = 'high-risk';
+                if (item.riskLevel === 'Medium') riskClass = 'med-risk';
+
+                let markerIcon = '<i class="fas fa-stethoscope"></i>';
+                
+                const dateStr = item.assessmentDate.substring(0, 16);
+                
+                let overrideSection = '';
+                if (item.doctorDiagnosis) {
+                    overrideSection = `
+                        <div style="margin-top:12px; padding-top:10px; border-top:1px dashed var(--panel-border);">
+                            <div style="color: var(--accent-blue); font-weight:600; margin-bottom:4px; display:flex; align-items:center; gap:6px;">
+                                <i class="fas fa-user-doctor"></i> Final Diagnosis: ${item.doctorDiagnosis}
+                            </div>
+                            <div style="font-size:13px; color: var(--text-secondary); margin-bottom:4px;">
+                                <strong>Treatment Notes:</strong> ${item.treatmentNotes || '—'}
+                            </div>
+                            <div style="font-size:13px; color: var(--text-secondary);">
+                                <strong>Prescription:</strong> ${item.prescription || '—'}
+                            </div>
+                            <div style="font-size:11px; color: var(--text-muted); text-align:right; margin-top:4px;">
+                                Signed by: Dr. ${item.doctorName || 'Veterinarian'}
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    const isDoctorOrAdmin = document.getElementById('sidebar-user-role')?.textContent === 'Doctor' || 
+                                           document.getElementById('sidebar-user-role')?.textContent === 'Admin';
+                    if (isDoctorOrAdmin) {
+                        overrideSection = `
+                            <div style="margin-top:10px; text-align:right;">
+                                <button class="btn-secondary" onclick="openClinicalOverrideFromHistory(${item.assessmentId})" style="padding:4px 8px; font-size:12px; border-radius:6px;">
+                                    <i class="fas fa-file-signature"></i> Add Clinical Review
+                                </button>
+                            </div>
+                        `;
+                    }
+                }
+
+                li.innerHTML = `
+                    <div class="timeline-marker ${riskClass}">
+                        ${markerIcon}
+                    </div>
+                    <div class="timeline-content">
+                        <span class="timeline-time">${dateStr}</span>
+                        <div class="timeline-title">
+                            <span>System Assessment: ${item.possibleCondition}</span>
+                            <span class="badge ${item.riskLevel.toLowerCase()}">${item.riskLevel} Risk</span>
+                        </div>
+                        <div class="timeline-details">
+                            <strong>System Guideline:</strong> ${item.recommendedAction}
+                            ${overrideSection}
+                        </div>
+                    </div>
+                `;
+                timeline.appendChild(li);
+            });
+        } else {
+            timeline.innerHTML = '<li style="text-align: center; list-style: none;" class="text-secondary">No diagnostics run.</li>';
+        }
+
+        // 3. Fetch Vaccinations
+        const resVac = await fetch(`/api/vaccinations?animalId=${animalId}`);
+        const vaccines = await resVac.json();
+
+        const vacTbody = document.getElementById('history-vaccines-body');
+        vacTbody.innerHTML = '';
+
+        if (vaccines.length > 0) {
+            vaccines.forEach(v => {
+                const tr = document.createElement('tr');
+                const statusBadge = `<span class="badge ${v.status.toLowerCase()}">${v.status}</span>`;
+                const adminDate = v.administeredDate ? v.administeredDate : '—';
+                
+                tr.innerHTML = `
+                    <td><strong>${v.vaccineName}</strong></td>
+                    <td>${v.scheduledDate}</td>
+                    <td>${adminDate}</td>
+                    <td>${statusBadge}</td>
+                    <td><small>${v.notes || '—'}</small></td>
+                `;
+                vacTbody.appendChild(tr);
+            });
+        } else {
+            vacTbody.innerHTML = '<tr><td colspan="5" style="text-align: center;" class="text-secondary">No vaccinations on record.</td></tr>';
+        }
+
+        container.style.display = 'block';
+
+    } catch (err) {
+        showToast("Error loading clinical history: " + err.message, "error");
+    }
+}
+
+// Dynamic clinical override call from history page
+function openClinicalOverrideFromHistory(assessmentId) {
+    const item = historyAssessments.find(a => a.assessmentId === assessmentId);
+    if (item) {
+        pendingAssessments = [item];
+        openClinicalOverride(assessmentId);
+    } else {
+        showToast("Assessment details not found.", "error");
+    }
+}
+

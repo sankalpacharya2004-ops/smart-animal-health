@@ -5,6 +5,7 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 
 public class DBConnection {
+
     private static String dbUrl = "jdbc:mysql://localhost:3306/animal_health_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC";
     private static String dbUser = "root";
     private static String dbPassword = ""; // Default local MySQL has no password
@@ -20,9 +21,15 @@ public class DBConnection {
 
     // Allow overriding connection parameters from context listeners or configuration
     public static void initialize(String url, String user, String password) {
-        if (url != null && !url.trim().isEmpty()) dbUrl = url;
-        if (user != null) dbUser = user;
-        if (password != null) dbPassword = password;
+        if (url != null && !url.trim().isEmpty()) {
+            dbUrl = url;
+        }
+        if (user != null) {
+            dbUser = user;
+        }
+        if (password != null) {
+            dbPassword = password;
+        }
     }
 
     public static Connection getConnection() throws SQLException {

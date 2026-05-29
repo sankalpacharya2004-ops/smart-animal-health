@@ -77,7 +77,7 @@ public class VaccinationServlet extends HttpServlet {
                 Vaccination v = vaccinationDAO.getVaccinationById(id);
                 if (v != null) {
                     Animal animal = animalDAO.getAnimalById(v.getAnimalId());
-                    if (!"Admin".equalsIgnoreCase(user.getRole()) && (animal == null || animal.getUserId() == null || animal.getUserId() != user.getUserId())) {
+                    if (!"Admin".equalsIgnoreCase(user.getRole()) && !"Doctor".equalsIgnoreCase(user.getRole()) && (animal == null || animal.getUserId() == null || animal.getUserId() != user.getUserId())) {
                         response.setStatus(HttpServletResponse.SC_FORBIDDEN);
                         jsonResponse.addProperty("success", false);
                         jsonResponse.addProperty("message", "Forbidden. You do not own this record.");
@@ -107,7 +107,7 @@ public class VaccinationServlet extends HttpServlet {
                     return;
                 }
 
-                if (!"Admin".equalsIgnoreCase(user.getRole()) && (animal.getUserId() == null || animal.getUserId() != user.getUserId())) {
+                if (!"Admin".equalsIgnoreCase(user.getRole()) && !"Doctor".equalsIgnoreCase(user.getRole()) && (animal.getUserId() == null || animal.getUserId() != user.getUserId())) {
                     response.setStatus(HttpServletResponse.SC_FORBIDDEN);
                     jsonResponse.addProperty("success", false);
                     jsonResponse.addProperty("message", "Forbidden. You do not own this animal's records.");
@@ -122,7 +122,7 @@ public class VaccinationServlet extends HttpServlet {
             }
         } 
         else {
-            if ("Admin".equalsIgnoreCase(user.getRole())) {
+            if ("Admin".equalsIgnoreCase(user.getRole()) || "Doctor".equalsIgnoreCase(user.getRole())) {
                 List<Vaccination> list = vaccinationDAO.getAllVaccinationsWithDetails();
                 response.getWriter().write(gson.toJson(list));
             } else {
@@ -166,7 +166,7 @@ public class VaccinationServlet extends HttpServlet {
             return;
         }
 
-        if (!"Admin".equalsIgnoreCase(user.getRole()) && (animal.getUserId() == null || animal.getUserId() != user.getUserId())) {
+        if (!"Admin".equalsIgnoreCase(user.getRole()) && !"Doctor".equalsIgnoreCase(user.getRole()) && (animal.getUserId() == null || animal.getUserId() != user.getUserId())) {
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
             jsonResponse.addProperty("success", false);
             jsonResponse.addProperty("message", "Forbidden. You do not own this animal's records.");
@@ -219,7 +219,7 @@ public class VaccinationServlet extends HttpServlet {
         }
 
         Animal animal = animalDAO.getAnimalById(existing.getAnimalId());
-        if (!"Admin".equalsIgnoreCase(user.getRole()) && (animal == null || animal.getUserId() == null || animal.getUserId() != user.getUserId())) {
+        if (!"Admin".equalsIgnoreCase(user.getRole()) && !"Doctor".equalsIgnoreCase(user.getRole()) && (animal == null || animal.getUserId() == null || animal.getUserId() != user.getUserId())) {
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
             jsonResponse.addProperty("success", false);
             jsonResponse.addProperty("message", "Forbidden. You do not own this animal's records.");
@@ -296,7 +296,7 @@ public class VaccinationServlet extends HttpServlet {
                 jsonResponse.addProperty("message", "Record not found.");
             } else {
                 Animal animal = animalDAO.getAnimalById(existing.getAnimalId());
-                if (!"Admin".equalsIgnoreCase(user.getRole()) && (animal == null || animal.getUserId() == null || animal.getUserId() != user.getUserId())) {
+                if (!"Admin".equalsIgnoreCase(user.getRole()) && !"Doctor".equalsIgnoreCase(user.getRole()) && (animal == null || animal.getUserId() == null || animal.getUserId() != user.getUserId())) {
                     response.setStatus(HttpServletResponse.SC_FORBIDDEN);
                     jsonResponse.addProperty("success", false);
                     jsonResponse.addProperty("message", "Forbidden. You do not own this animal's records.");

@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Animal Health - Animal Medical History</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .timeline {
+            position: relative;
+            padding: 1rem 0;
+            list-style: none;
+        }
+        .timeline::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 2.2rem;
+            width: 2px;
+            background: var(--panel-border);
+        }
+        .timeline-item {
+            position: relative;
+            margin-bottom: 2rem;
+            padding-left: 4.5rem;
+        }
+        .timeline-marker {
+            position: absolute;
+            left: 1.3rem;
+            width: 2rem;
+            height: 2rem;
+            border-radius: 50%;
+            background: var(--bg-navy);
+            border: 2px solid var(--accent-cyan);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1;
+            color: #fff;
+            font-size: 11px;
+            box-shadow: 0 0 10px rgba(0, 184, 212, 0.2);
+        }
+        .timeline-marker.high-risk {
+            border-color: var(--accent-rose);
+            color: var(--accent-rose);
+            box-shadow: 0 0 10px rgba(244, 63, 94, 0.2);
+        }
+        .timeline-marker.med-risk {
+            border-color: var(--accent-amber);
+            color: var(--accent-amber);
+            box-shadow: 0 0 10px rgba(245, 158, 11, 0.2);
+        }
+        .timeline-marker.low-risk {
+            border-color: var(--accent-emerald);
+            color: var(--accent-emerald);
+            box-shadow: 0 0 10px rgba(16, 185, 129, 0.2);
+        }
+        .timeline-marker.override {
+            border-color: var(--accent-blue);
+            color: var(--accent-blue);
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.2);
+        }
+        .timeline-content {
+            padding: 1.2rem 1.5rem;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--panel-border);
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        }
+        .timeline-time {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+            display: block;
+        }
+        .timeline-title {
+            font-family: var(--font-heading);
+            font-size: 16px;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .timeline-details {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+        .medical-section-title {
+            font-family: var(--font-heading);
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .history-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+        @media (max-width: 1024px) {
+            .history-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Ambient glowing backgrounds -->
+    <div class="ambient-glow glow-top-left"></div>
+    <div class="ambient-glow glow-bottom-right"></div>
+
+    <div class="app-container">
+        
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar glass-panel" style="border-radius: 0; border: none; border-right: 1px solid var(--panel-border);">
+            <div class="brand-section">
+                <div class="brand-logo">
+                    <i class="fas fa-heart-pulse"></i>
+                </div>
+                <span class="brand-title">Animal Health</span>
+            </div>
+
+            <nav>
+                <ul class="nav-menu">
+                    <li>
+                        <a href="dashboard.html" class="nav-link">
+                            <i class="fas fa-chart-pie"></i>
+                            <span>Dashboard</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="animals.html" class="nav-link">
+                            <i class="fas fa-paw"></i>
+                            <span>Animals Registry</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="symptoms.html" class="nav-link">
+                            <i class="fas fa-stethoscope"></i>
+                            <span>Log Symptoms</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="vaccinations.html" class="nav-link">
+                            <i class="fas fa-syringe"></i>
+                            <span>Vaccinations</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="medical_history.html" class="nav-link active">
+                            <i class="fas fa-file-medical"></i>
+                            <span>Medical History</span>
+                        </a>
+                    </li>
+                    <li class="doctor-only" style="display: none;">
+                        <a href="doctor_dashboard.html" class="nav-link">
+                            <i class="fas fa-user-md"></i>
+                            <span>Doctor Dashboard</span>
+                        </a>
+                    </li>
+                    <li class="admin-only" style="display: none;">
+                        <a href="caretakers.html" class="nav-link">
+                            <i class="fas fa-users-cog"></i>
+                            <span>Caretakers</span>
+                        </a>
+                    </li>
+                    <li class="admin-only" style="display: none;">
+                        <a href="assessments.html" class="nav-link">
+                            <i class="fas fa-notes-medical"></i>
+                            <span>Health Assessments</span>
+                        </a>
+                    </li>
+                    <li class="admin-only" style="display: none;">
+                        <a href="audit_logs.html" class="nav-link">
+                            <i class="fas fa-clipboard-list"></i>
+                            <span>Audit Logs</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+
+            <div class="user-profile-section">
+                <div class="user-info">
+                    <div id="sidebar-user-avatar" class="user-avatar">U</div>
+                    <div class="user-details">
+                        <span id="sidebar-user-name" class="user-name">Loading...</span>
+                        <span id="sidebar-user-role" class="user-role">User</span>
+                    </div>
+                </div>
+                <button onclick="logout()" class="btn-secondary" style="width: 100%; justify-content: center; padding: 8px;">
+                    <i class="fas fa-right-from-bracket"></i> Sign Out
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Workspace -->
+        <main class="main-content">
+            <header class="header-container">
+                <div>
+                    <h1 class="page-title">Medical History Review</h1>
+                    <p class="page-subtitle">Track longitudinal symptoms, clinical predictions, and vaccination schedules for any animal.</p>
+                </div>
+            </header>
+
+            <!-- Selection Panel -->
+            <div class="glass-panel" style="padding: 1.5rem; display: flex; gap: 1.5rem; align-items: center; flex-wrap: wrap;">
+                <div class="form-group" style="min-width: 250px; flex-grow: 1;">
+                    <label for="history-animal-select">Select Animal Profile</label>
+                    <select id="history-animal-select" onchange="loadAnimalMedicalHistory(this.value)">
+                        <option value="">-- Choose an Animal --</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Profile Info & Timeline grid (Hidden initially until selection) -->
+            <div id="history-details-container" style="display: none;">
+                
+                <!-- Animal Profile Card -->
+                <div class="glass-panel" style="padding: 1.5rem; margin-top: 1.5rem;">
+                    <div class="medical-section-title">
+                        <i class="fas fa-id-card" style="color: var(--accent-cyan);"></i> Animal Profile Information
+                    </div>
+                    <div class="animal-meta" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; font-size: 15px;">
+                        <div><strong>Name:</strong> <span id="info-name" class="text-primary">—</span></div>
+                        <div><strong>Species:</strong> <span id="info-species" class="text-primary">—</span></div>
+                        <div><strong>Breed:</strong> <span id="info-breed" class="text-primary">—</span></div>
+                        <div><strong>Age:</strong> <span id="info-age" class="text-primary">—</span></div>
+                        <div><strong>Weight:</strong> <span id="info-weight" class="text-primary">—</span></div>
+                        <div><strong>Type:</strong> <span id="info-type" class="text-primary">—</span></div>
+                        <div><strong>Owner / Caretaker:</strong> <span id="info-owner" class="text-primary">—</span></div>
+                        <div><strong>Contact Number:</strong> <span id="info-contact" class="text-primary">—</span></div>
+                    </div>
+                </div>
+
+                <div class="history-grid">
+                    
+                    <!-- Clinical History Timeline -->
+                    <div class="glass-panel" style="padding: 1.5rem; display: flex; flex-direction: column;">
+                        <div class="medical-section-title">
+                            <i class="fas fa-stethoscope" style="color: var(--accent-rose);"></i> Clinical Timeline &amp; Diagnostics
+                        </div>
+                        <div style="flex-grow: 1; overflow-y: auto; max-height: 500px; padding-right: 0.5rem;">
+                            <ul id="clinical-timeline" class="timeline">
+                                <li style="text-align: center; list-style: none;" class="text-secondary">No diagnostics run.</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Vaccination Compliance Log -->
+                    <div class="glass-panel" style="padding: 1.5rem; display: flex; flex-direction: column;">
+                        <div class="medical-section-title">
+                            <i class="fas fa-syringe" style="color: var(--accent-emerald);"></i> Vaccination Registry
+                        </div>
+                        <div style="flex-grow: 1; overflow-y: auto; max-height: 500px; padding-right: 0.5rem;">
+                            <table class="custom-table" style="margin-top: 0;">
+                                <thead>
+                                    <tr>
+                                        <th>Vaccine</th>
+                                        <th>Scheduled Date</th>
+                                        <th>Admin Date</th>
+                                        <th>Status</th>
+                                        <th>Vet Notes</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="history-vaccines-body">
+                                    <tr><td colspan="5" style="text-align: center;" class="text-secondary">No vaccinations on record.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Clinical Override Modal -->
+    <div id="override-modal" class="modal-overlay">
+        <div class="modal-container glass-panel" style="padding: 0;">
+            <div class="modal-header">
+                <h3 class="modal-title"><i class="fas fa-file-signature" style="color: var(--accent-cyan); margin-right: 8px;"></i> Clinical Override &amp; Diagnosis</h3>
+                <button class="modal-close" onclick="closeOverrideModal()">&times;</button>
+            </div>
+            <form id="override-form" onsubmit="saveClinicalOverride(event)">
+                <input type="hidden" id="override-assessment-id">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Animal Name</label>
+                        <input type="text" id="override-animal-name" disabled style="opacity: 0.7;">
+                    </div>
+                    <div class="form-group">
+                        <label>Owner Name</label>
+                        <input type="text" id="override-owner-name" disabled style="opacity: 0.7;">
+                    </div>
+                    <div class="form-group">
+                        <label>Automated Condition</label>
+                        <input type="text" id="override-auto-condition" disabled style="opacity: 0.7;">
+                    </div>
+                    <div class="form-group">
+                        <label>Automated Risk Level</label>
+                        <div style="margin-top: 8px;" id="override-auto-risk"></div>
+                    </div>
+                    <div class="form-group full-width">
+                        <label>Professional Veterinary Diagnosis <span style="color: var(--accent-rose);">*</span></label>
+                        <input type="text" id="override-diagnosis" required placeholder="Enter final clinical diagnosis...">
+                    </div>
+                    <div class="form-group full-width">
+                        <label>Treatment Notes</label>
+                        <textarea id="override-notes" rows="3" placeholder="Provide clinic intervention and observations..."></textarea>
+                    </div>
+                    <div class="form-group full-width">
+                        <label>Prescriptions &amp; Dosages</label>
+                        <textarea id="override-prescription" rows="3" placeholder="List medications, dosage amounts, and frequencies..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" onclick="closeOverrideModal()">Cancel</button>
+                    <button type="submit" class="btn-primary">Save Assessment</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Scripts -->
+    <script src="js/auth.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
