@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Animal Health - Vaccinations</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+    <!-- Ambient glowing backgrounds -->
+    <div class="ambient-glow glow-top-left"></div>
+    <div class="ambient-glow glow-bottom-right"></div>
+
+    <div class="app-container">
+        
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar glass-panel" style="border-radius: 0; border: none; border-right: 1px solid var(--panel-border);">
+            <div class="brand-section">
+                <div class="brand-logo">
+                    <i class="fas fa-heart-pulse"></i>
+                </div>
+                <span class="brand-title">Animal Health</span>
+            </div>
+
+            <nav>
+                <ul class="nav-menu">
+                    <li>
+                        <a href="dashboard.html" class="nav-link">
+                            <i class="fas fa-chart-pie"></i>
+                            <span>Dashboard</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="animals.html" class="nav-link">
+                            <i class="fas fa-paw"></i>
+                            <span>Animals Registry</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="symptoms.html" class="nav-link">
+                            <i class="fas fa-stethoscope"></i>
+                            <span>Log Symptoms</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="vaccinations.html" class="nav-link active">
+                            <i class="fas fa-syringe"></i>
+                            <span>Vaccinations</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+
+            <div class="user-profile-section">
+                <div class="user-info">
+                    <div id="sidebar-user-avatar" class="user-avatar">U</div>
+                    <div class="user-details">
+                        <span id="sidebar-user-name" class="user-name">Loading...</span>
+                        <span id="sidebar-user-role" class="user-role">User</span>
+                    </div>
+                </div>
+                <button onclick="logout()" class="btn-secondary" style="width: 100%; justify-content: center; padding: 8px;">
+                    <i class="fas fa-right-from-bracket"></i> Sign Out
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Workspace -->
+        <main class="main-content">
+            <header class="header-container">
+                <div>
+                    <h1 class="page-title">Vaccinations Planner</h1>
+                    <p class="page-subtitle">Schedule upcoming vaccine boosters, record administered dates, and manage immunization records.</p>
+                </div>
+            </header>
+
+            <section class="dashboard-grid">
+                <!-- Schedule Form -->
+                <div class="glass-panel" style="padding: 1.5rem; height: fit-content;">
+                    <div style="margin-bottom: 1.2rem; padding-bottom: 0.8rem; border-bottom: 1px solid var(--panel-border);">
+                        <h2 class="panel-title">
+                            <i class="fas fa-calendar-plus" style="color: var(--accent-cyan);"></i> Schedule Vaccination
+                        </h2>
+                    </div>
+                    <form id="vaccination-form">
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                            <label for="vaccination-animal-select">Select Animal *</label>
+                            <select id="vaccination-animal-select" required>
+                                <option value="">Loading animals...</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                            <label for="vac-name">Vaccine Name *</label>
+                            <input type="text" id="vac-name" required placeholder="e.g. Rabies, DHPP booster">
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                            <label for="vac-date">Scheduled Date *</label>
+                            <input type="date" id="vac-date" required>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 1.5rem;">
+                            <label for="vac-notes">Notes / Vet Location</label>
+                            <textarea id="vac-notes" rows="3" placeholder="e.g. Administered at City Vet Clinic, 2nd booster dose"></textarea>
+                        </div>
+
+                        <button type="submit" class="btn-primary" style="width: 100%; justify-content: center;">
+                            <i class="fas fa-calendar-check"></i> Add to Schedule
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Vaccination Log List Table -->
+                <div class="glass-panel" style="display: flex; flex-direction: column;">
+                    <div class="panel-header" style="border-bottom: none; padding-bottom: 0.5rem;">
+                        <h2 class="panel-title">
+                            <i class="fas fa-list-check" style="color: var(--accent-emerald);"></i> Vaccination Logs
+                        </h2>
+                    </div>
+                    
+                    <!-- Filtering dropdown -->
+                    <div style="padding: 0 1.5rem 1rem 1.5rem; border-bottom: 1px solid var(--panel-border);">
+                        <select id="filter-animal-select" style="width: 100%;">
+                            <option value="">Choose an animal to view schedule...</option>
+                        </select>
+                    </div>
+
+                    <div class="table-container" style="flex-grow: 1; padding-top: 1rem;">
+                        <table class="custom-table">
+                            <thead>
+                                <tr>
+                                    <th>Vaccine</th>
+                                    <th>Scheduled Date</th>
+                                    <th>Administered</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="vaccinations-body">
+                                <tr><td colspan="5" style="text-align:center;" class="text-secondary">Please select an animal above to inspect schedules.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/auth.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Animal Health - Animals Registry</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+    <!-- Ambient glowing backgrounds -->
+    <div class="ambient-glow glow-top-left"></div>
+    <div class="ambient-glow glow-bottom-right"></div>
+
+    <div class="app-container">
+        
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar glass-panel" style="border-radius: 0; border: none; border-right: 1px solid var(--panel-border);">
+            <div class="brand-section">
+                <div class="brand-logo">
+                    <i class="fas fa-heart-pulse"></i>
+                </div>
+                <span class="brand-title">Animal Health</span>
+            </div>
+
+            <nav>
+                <ul class="nav-menu">
+                    <li>
+                        <a href="dashboard.html" class="nav-link">
+                            <i class="fas fa-chart-pie"></i>
+                            <span>Dashboard</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="animals.html" class="nav-link active">
+                            <i class="fas fa-paw"></i>
+                            <span>Animals Registry</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="symptoms.html" class="nav-link">
+                            <i class="fas fa-stethoscope"></i>
+                            <span>Log Symptoms</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="vaccinations.html" class="nav-link">
+                            <i class="fas fa-syringe"></i>
+                            <span>Vaccinations</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+
+            <div class="user-profile-section">
+                <div class="user-info">
+                    <div id="sidebar-user-avatar" class="user-avatar">U</div>
+                    <div class="user-details">
+                        <span id="sidebar-user-name" class="user-name">Loading...</span>
+                        <span id="sidebar-user-role" class="user-role">User</span>
+                    </div>
+                </div>
+                <button onclick="logout()" class="btn-secondary" style="width: 100%; justify-content: center; padding: 8px;">
+                    <i class="fas fa-right-from-bracket"></i> Sign Out
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Workspace -->
+        <main class="main-content">
+            <header class="header-container">
+                <div>
+                    <h1 class="page-title">Animals Registry</h1>
+                    <p class="page-subtitle">Add new animal profiles, manage owner details, and check records.</p>
+                </div>
+                <div>
+                    <button id="btn-add-animal" class="btn-primary">
+                        <i class="fas fa-plus"></i> Register Animal
+                    </button>
+                </div>
+            </header>
+
+            <!-- Dynamic grid listing of animal cards -->
+            <section id="animals-grid" class="animal-list-grid">
+                <div style="grid-column: 1/-1; text-align:center; padding: 3rem;" class="glass-panel text-secondary">
+                    <i class="fas fa-spinner fa-spin" style="font-size: 30px; margin-bottom: 1rem;"></i>
+                    <p>Loading animal profiles...</p>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Register/Modify Modal -->
+    <div id="animal-modal" class="modal-overlay">
+        <div class="glass-panel modal-container">
+            <div class="modal-header">
+                <h2 id="modal-title-text" class="modal-title">Register New Animal</h2>
+                <button id="modal-close-btn" class="modal-close">&times;</button>
+            </div>
+            <form id="animal-form">
+                <!-- Hidden inputs -->
+                <input type="hidden" id="animal-id-input" value="0">
+                
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="animal-name">Animal Name *</label>
+                        <input type="text" id="animal-name" required placeholder="e.g. Buddy">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="animal-type">Classification *</label>
+                        <select id="animal-type" required>
+                            <option value="pet">Pet (Dog, Cat, etc.)</option>
+                            <option value="farm">Farm Animal (Cow, Sheep, etc.)</option>
+                            <option value="stray">Stray / Rescue</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="animal-species">Species *</label>
+                        <input type="text" id="animal-species" required placeholder="e.g. Dog">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="animal-breed">Breed / Subspecies</label>
+                        <input type="text" id="animal-breed" placeholder="e.g. Golden Retriever">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="animal-age">Age (years)</label>
+                        <input type="number" id="animal-age" min="0" max="100" placeholder="e.g. 3">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="animal-weight">Weight (kg)</label>
+                        <input type="number" id="animal-weight" min="0" step="0.01" placeholder="e.g. 30.5">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="animal-owner">Caretaker / Owner Name</label>
+                        <input type="text" id="animal-owner" placeholder="Name of owner">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="animal-contact">Contact Number</label>
+                        <input type="tel" id="animal-contact" placeholder="Phone number">
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" id="btn-cancel-modal" class="btn-secondary">Cancel</button>
+                    <button type="submit" class="btn-primary">Save Profile</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/auth.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>

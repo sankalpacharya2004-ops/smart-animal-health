@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Animal Health Assistant - Portal</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body class="auth-page">
+
+    <!-- Ambient glowing backgrounds -->
+    <div class="ambient-glow glow-top-left"></div>
+    <div class="ambient-glow glow-bottom-right"></div>
+
+    <div class="glass-panel auth-container">
+        <div class="auth-header">
+            <div class="auth-logo">
+                <i class="fas fa-heart-pulse"></i>
+            </div>
+            <h1 class="auth-title">Animal Health Portal</h1>
+            <p class="auth-subtitle">Smart health logs, schedule vaccines &amp; AI-driven risk alerts.</p>
+        </div>
+
+        <!-- Auth Tabs -->
+        <div class="auth-tabs">
+            <div id="tab-login" class="auth-tab active" onclick="switchAuthTab('login')">Login</div>
+            <div id="tab-signup" class="auth-tab" onclick="switchAuthTab('signup')">Sign Up</div>
+        </div>
+
+        <!-- Login Form -->
+        <div id="form-login-wrapper" class="auth-form-wrapper active">
+            <form id="login-form">
+                <div class="form-group" style="margin-bottom: 1.2rem;">
+                    <label for="login-username">Username</label>
+                    <input type="text" id="login-username" required placeholder="Enter username">
+                </div>
+                <div class="form-group" style="margin-bottom: 1.8rem;">
+                    <label for="login-password">Password</label>
+                    <input type="password" id="login-password" required placeholder="Enter password">
+                </div>
+                <button type="submit" class="btn-primary" style="width: 100%; justify-content: center; padding: 12px;">
+                    <i class="fas fa-right-to-bracket"></i> Authenticate
+                </button>
+            </form>
+        </div>
+
+        <!-- Signup Form -->
+        <div id="form-signup-wrapper" class="auth-form-wrapper">
+            <form id="signup-form">
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label for="signup-username">Username</label>
+                    <input type="text" id="signup-username" required placeholder="Choose a username">
+                </div>
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label for="signup-fullname">Full Name</label>
+                    <input type="text" id="signup-fullname" required placeholder="Your full name">
+                </div>
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label for="signup-email">Email Address</label>
+                    <input type="email" id="signup-email" required placeholder="yourname@domain.com">
+                </div>
+                <div class="form-group" style="margin-bottom: 1.8rem;">
+                    <label for="signup-password">Password</label>
+                    <input type="password" id="signup-password" required placeholder="Choose a secure password">
+                </div>
+                <button type="submit" class="btn-primary" style="width: 100%; justify-content: center; padding: 12px;">
+                    <i class="fas fa-user-plus"></i> Initialize Account
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Script loading -->
+    <script src="js/auth.js"></script>
+    <script>
+        // Check session before showing login screen
+        document.addEventListener('DOMContentLoaded', async () => {
+            await checkAuth(false, true); // Don't redirect on fail, redirect on success to dashboard
+        });
+
+        function switchAuthTab(type) {
+            const tabLogin = document.getElementById('tab-login');
+            const tabSignup = document.getElementById('tab-signup');
+            const formLogin = document.getElementById('form-login-wrapper');
+            const formSignup = document.getElementById('form-signup-wrapper');
+
+            if (type === 'login') {
+                tabLogin.classList.add('active');
+                tabSignup.classList.remove('active');
+                formLogin.classList.add('active');
+                formSignup.classList.remove('active');
+            } else {
+                tabSignup.classList.add('active');
+                tabLogin.classList.remove('active');
+                formSignup.classList.add('active');
+                formLogin.classList.remove('active');
+            }
+        }
+
+        // Form bindings
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('login-username').value;
+            const password = document.getElementById('login-password').value;
+
+            try {
+                const res = await fetch(`${AUTH_API}?action=login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: `username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    setTimeout(() => window.location.href = 'dashboard.html', 800);
+                } else {
+                    showToast(data.message, 'error');
+                }
+            } catch (err) {
+                showToast('Authentication server error.', 'error');
+            }
+        });
+
+        document.getElementById('signup-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('signup-username').value;
+            const fullName = document.getElementById('signup-fullname').value;
+            const email = document.getElementById('signup-email').value;
+            const password = document.getElementById('signup-password').value;
+
+            try {
+                const res = await fetch(`${AUTH_API}?action=signup`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: `username=${encodeURIComponent(username)}&fullName=${encodeURIComponent(fullName)}&email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    setTimeout(() => window.location.href = 'dashboard.html', 800);
+                } else {
+                    showToast(data.message, 'error');
+                }
+            } catch (err) {
+                showToast('Registration server error.', 'error');
+            }
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,15 @@
+# Tomcat and server files
+/tomcat/
+tomcat.zip
+*.war
+
+# Build and IDE files
+/target/
+/build_temp/
+/lib/
+.idea/
+.vscode/
+*.class
+*.log
+*.tmp
+temp.zip

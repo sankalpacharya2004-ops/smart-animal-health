@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Animal Health - Dashboard</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+    <!-- Ambient glowing backgrounds -->
+    <div class="ambient-glow glow-top-left"></div>
+    <div class="ambient-glow glow-bottom-right"></div>
+
+    <div class="app-container">
+        
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar glass-panel" style="border-radius: 0; border: none; border-right: 1px solid var(--panel-border);">
+            <div class="brand-section">
+                <div class="brand-logo">
+                    <i class="fas fa-heart-pulse"></i>
+                </div>
+                <span class="brand-title">Animal Health</span>
+            </div>
+
+            <nav>
+                <ul class="nav-menu">
+                    <li>
+                        <a href="dashboard.html" class="nav-link active">
+                            <i class="fas fa-chart-pie"></i>
+                            <span>Dashboard</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="animals.html" class="nav-link">
+                            <i class="fas fa-paw"></i>
+                            <span>Animals Registry</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="symptoms.html" class="nav-link">
+                            <i class="fas fa-stethoscope"></i>
+                            <span>Log Symptoms</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="vaccinations.html" class="nav-link">
+                            <i class="fas fa-syringe"></i>
+                            <span>Vaccinations</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+
+            <div class="user-profile-section">
+                <div class="user-info">
+                    <div id="sidebar-user-avatar" class="user-avatar">U</div>
+                    <div class="user-details">
+                        <span id="sidebar-user-name" class="user-name">Loading...</span>
+                        <span id="sidebar-user-role" class="user-role">User</span>
+                    </div>
+                </div>
+                <button onclick="logout()" class="btn-secondary" style="width: 100%; justify-content: center; padding: 8px;">
+                    <i class="fas fa-right-from-bracket"></i> Sign Out
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Dashboard View -->
+        <main class="main-content">
+            <header class="header-container">
+                <div>
+                    <h1 class="page-title">Health Dashboard</h1>
+                    <p class="page-subtitle">Real-time health status, diagnostic summaries, and scheduling alerts.</p>
+                </div>
+                <div>
+                    <a href="symptoms.html" class="btn-primary">
+                        <i class="fas fa-plus"></i> Run Health Diagnosis
+                    </a>
+                </div>
+            </header>
+
+            <!-- Metrics Cards Grid -->
+            <section class="stats-grid">
+                <div class="glass-panel stat-card">
+                    <div class="stat-icon cyan">
+                        <i class="fas fa-dog"></i>
+                    </div>
+                    <div class="stat-info">
+                        <span id="stat-total-animals" class="stat-value">—</span>
+                        <span class="stat-label">Total Animals Registered</span>
+                    </div>
+                </div>
+
+                <div class="glass-panel stat-card">
+                    <div class="stat-icon emerald">
+                        <i class="fas fa-calendar-check"></i>
+                    </div>
+                    <div class="stat-info">
+                        <span id="stat-pending-vaccinations" class="stat-value">—</span>
+                        <span class="stat-label">Pending Vaccinations</span>
+                    </div>
+                </div>
+
+                <div class="glass-panel stat-card">
+                    <div class="stat-icon rose">
+                        <i class="fas fa-triangle-exclamation"></i>
+                    </div>
+                    <div class="stat-info">
+                        <span id="stat-risk-alerts" class="stat-value">—</span>
+                        <span class="stat-label">High Risk Cases</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Columns: History / Scheduling -->
+            <section class="dashboard-grid">
+                <!-- Column 1: Recent Assessments -->
+                <div class="glass-panel" style="display: flex; flex-direction: column;">
+                    <div class="panel-header">
+                        <h2 class="panel-title">
+                            <i class="fas fa-notes-medical" style="color: var(--accent-cyan);"></i> Recent Diagnostics
+                        </h2>
+                        <a href="symptoms.html" class="btn-secondary" style="padding: 6px 12px; font-size: 13px;">View logs</a>
+                    </div>
+                    <div class="table-container">
+                        <table class="custom-table">
+                            <thead>
+                                <tr>
+                                    <th>Animal</th>
+                                    <th>Severity</th>
+                                    <th>Possible Diagnosis</th>
+                                    <th>Date Assessed</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recent-assessments-body">
+                                <tr><td colspan="4" style="text-align:center;" class="text-secondary">Loading statistics...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Column 2: Upcoming Vaccinations -->
+                <div class="glass-panel" style="display: flex; flex-direction: column;">
+                    <div class="panel-header">
+                        <h2 class="panel-title">
+                            <i class="fas fa-clock" style="color: var(--accent-amber);"></i> Upcoming Vaccines
+                        </h2>
+                    </div>
+                    <div class="table-container" style="padding: 0 1rem 1rem 1rem;">
+                        <table class="custom-table">
+                            <thead>
+                                <tr>
+                                    <th>Animal</th>
+                                    <th>Vaccine</th>
+                                    <th>Due Date</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="upcoming-vaccinations-body">
+                                <tr><td colspan="4" style="text-align:center;" class="text-secondary">Loading statistics...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/auth.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>

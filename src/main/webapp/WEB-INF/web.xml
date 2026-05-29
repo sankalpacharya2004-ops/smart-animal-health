@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_4_0.xsd"
+         version="4.0">
+
+    <display-name>Smart Animal Health Assistant</display-name>
+
+    <!-- Context Parameters for Database Connection -->
+    <context-param>
+        <param-name>db.url</param-name>
+        <param-value>jdbc:mysql://localhost:3306/animal_health_db?useSSL=false&amp;allowPublicKeyRetrieval=true&amp;serverTimezone=UTC</param-value>
+    </context-param>
+    <context-param>
+        <param-name>db.user</param-name>
+        <param-value>root</param-value>
+    </context-param>
+    <context-param>
+        <param-name>db.password</param-name>
+        <param-value>Sankalp@123</param-value>
+    </context-param>
+
+    <!-- Context Listener to initialize Database parameters -->
+    <listener>
+        <listener-class>com.smartanimal.servlet.AppContextListener</listener-class>
+    </listener>
+
+    <!-- Servlets -->
+    <servlet>
+        <servlet-name>AuthServlet</servlet-name>
+        <servlet-class>com.smartanimal.servlet.AuthServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>AuthServlet</servlet-name>
+        <url-pattern>/api/auth</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>AnimalServlet</servlet-name>
+        <servlet-class>com.smartanimal.servlet.AnimalServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>AnimalServlet</servlet-name>
+        <url-pattern>/api/animals</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>SymptomServlet</servlet-name>
+        <servlet-class>com.smartanimal.servlet.SymptomServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>SymptomServlet</servlet-name>
+        <url-pattern>/api/symptoms</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>AssessmentServlet</servlet-name>
+        <servlet-class>com.smartanimal.servlet.AssessmentServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>AssessmentServlet</servlet-name>
+        <url-pattern>/api/assessments</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>VaccinationServlet</servlet-name>
+        <servlet-class>com.smartanimal.servlet.VaccinationServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>VaccinationServlet</servlet-name>
+        <url-pattern>/api/vaccinations</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>DashboardServlet</servlet-name>
+        <servlet-class>com.smartanimal.servlet.DashboardServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>DashboardServlet</servlet-name>
+        <url-pattern>/api/dashboard</url-pattern>
+    </servlet-mapping>
+
+    <welcome-file-list>
+        <welcome-file>index.html</welcome-file>
+    </welcome-file-list>
+
+</web-app>
