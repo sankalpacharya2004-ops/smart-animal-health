@@ -11,6 +11,9 @@ public class HealthAssessment {
     private String recommendedAction;
     private Timestamp assessmentDate;
 
+    private String animalName;
+    private String ownerName;
+
     public HealthAssessment() {}
 
     public HealthAssessment(int assessmentId, int symptomId, int animalId, String riskLevel, String possibleCondition, String recommendedAction, Timestamp assessmentDate) {
@@ -21,6 +24,22 @@ public class HealthAssessment {
         this.possibleCondition = possibleCondition;
         this.recommendedAction = recommendedAction;
         this.assessmentDate = assessmentDate;
+    }
+
+    public String getAnimalName() {
+        return animalName;
+    }
+
+    public void setAnimalName(String animalName) {
+        this.animalName = animalName;
+    }
+
+    public String getOwnerName() {
+        return ownerName;
+    }
+
+    public void setOwnerName(String ownerName) {
+        this.ownerName = ownerName;
     }
 
     public int getAssessmentId() {

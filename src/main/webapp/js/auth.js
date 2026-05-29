@@ -51,6 +51,10 @@ async function checkAuth(redirectOnFail = true, redirectOnSuccess = false) {
                 avatarEl.textContent = initial;
             }
 
+            if (data.user.role === 'Admin') {
+                document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
+            }
+
             if (redirectOnSuccess) {
                 window.location.href = 'dashboard.html';
             }

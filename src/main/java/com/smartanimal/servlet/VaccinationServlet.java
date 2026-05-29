@@ -122,10 +122,15 @@ public class VaccinationServlet extends HttpServlet {
             }
         } 
         else {
-            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            jsonResponse.addProperty("success", false);
-            jsonResponse.addProperty("message", "Missing parameter: id or animalId.");
-            response.getWriter().write(gson.toJson(jsonResponse));
+            if ("Admin".equalsIgnoreCase(user.getRole())) {
+                List<Vaccination> list = vaccinationDAO.getAllVaccinationsWithDetails();
+                response.getWriter().write(gson.toJson(list));
+            } else {
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                jsonResponse.addProperty("success", false);
+                jsonResponse.addProperty("message", "Missing parameter: id or animalId.");
+                response.getWriter().write(gson.toJson(jsonResponse));
+            }
         }
     }
 

@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Animal Health - Audit Logs &amp; Insights</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .timeline {
+            position: relative;
+            padding: 1rem 0;
+            list-style: none;
+        }
+        .timeline::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 2.2rem;
+            width: 2px;
+            background: var(--panel-border);
+        }
+        .timeline-item {
+            position: relative;
+            margin-bottom: 1.5rem;
+            padding-left: 4.5rem;
+        }
+        .timeline-marker {
+            position: absolute;
+            left: 1.3rem;
+            width: 2rem;
+            height: 2rem;
+            border-radius: 50%;
+            background: var(--bg-navy);
+            border: 2px solid var(--accent-cyan);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1;
+            color: #fff;
+            font-size: 11px;
+            box-shadow: 0 0 10px rgba(0, 184, 212, 0.2);
+        }
+        .timeline-marker.user-registered {
+            border-color: #3b82f6;
+            color: #3b82f6;
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.2);
+        }
+        .timeline-marker.animal-registered {
+            border-color: #10b981;
+            color: #10b981;
+            box-shadow: 0 0 10px rgba(16, 185, 129, 0.2);
+        }
+        .timeline-marker.diagnosis-run {
+            border-color: #ef4444;
+            color: #ef4444;
+            box-shadow: 0 0 10px rgba(239, 68, 68, 0.2);
+        }
+        .timeline-marker.vaccination-scheduled {
+            border-color: #f59e0b;
+            color: #f59e0b;
+            box-shadow: 0 0 10px rgba(245, 158, 11, 0.2);
+        }
+        .timeline-content {
+            padding: 1rem 1.2rem;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--panel-border);
+            border-radius: 8px;
+        }
+        .timeline-time {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+            display: block;
+        }
+        .timeline-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 6px;
+        }
+        .timeline-details {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Ambient glowing backgrounds -->
+    <div class="ambient-glow glow-top-left"></div>
+    <div class="ambient-glow glow-bottom-right"></div>
+
+    <div class="app-container">
+        
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar glass-panel" style="border-radius: 0; border: none; border-right: 1px solid var(--panel-border);">
+            <div class="brand-section">
+                <div class="brand-logo">
+                    <i class="fas fa-heart-pulse"></i>
+                </div>
+                <span class="brand-title">Animal Health</span>
+            </div>
+
+            <nav>
+                <ul class="nav-menu">
+                    <li>
+                        <a href="dashboard.html" class="nav-link">
+                            <i class="fas fa-chart-pie"></i>
+                            <span>Dashboard</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="animals.html" class="nav-link">
+                            <i class="fas fa-paw"></i>
+                            <span>Animals Registry</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="symptoms.html" class="nav-link">
+                            <i class="fas fa-stethoscope"></i>
+                            <span>Log Symptoms</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="vaccinations.html" class="nav-link">
+                            <i class="fas fa-syringe"></i>
+                            <span>Vaccinations</span>
+                        </a>
+                    </li>
+                    <li class="admin-only" style="display: none;">
+                        <a href="caretakers.html" class="nav-link">
+                            <i class="fas fa-users-cog"></i>
+                            <span>Caretakers</span>
+                        </a>
+                    </li>
+                    <li class="admin-only" style="display: none;">
+                        <a href="assessments.html" class="nav-link">
+                            <i class="fas fa-notes-medical"></i>
+                            <span>Health Assessments</span>
+                        </a>
+                    </li>
+                    <li class="admin-only" style="display: none;">
+                        <a href="audit_logs.html" class="nav-link active">
+                            <i class="fas fa-clipboard-list"></i>
+                            <span>Audit Logs</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+
+            <div class="user-profile-section">
+                <div class="user-info">
+                    <div id="sidebar-user-avatar" class="user-avatar">U</div>
+                    <div class="user-details">
+                        <span id="sidebar-user-name" class="user-name">Loading...</span>
+                        <span id="sidebar-user-role" class="user-role">User</span>
+                    </div>
+                </div>
+                <button onclick="logout()" class="btn-secondary" style="width: 100%; justify-content: center; padding: 8px;">
+                    <i class="fas fa-right-from-bracket"></i> Sign Out
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Workspace -->
+        <main class="main-content">
+            <header class="header-container">
+                <div>
+                    <h1 class="page-title">System Audit Logs</h1>
+                    <p class="page-subtitle">Real-time trace of caretaker registrations, diagnostic runs, animal logging, and scheduled booster compliance.</p>
+                </div>
+            </header>
+
+            <!-- Activity Logs Panel -->
+            <div class="glass-panel" style="padding: 1.5rem; margin-top: 1rem;">
+                <div class="panel-header" style="border-bottom: 1px solid var(--panel-border); margin-bottom: 1.5rem; padding-bottom: 0.8rem;">
+                    <h2 class="panel-title">
+                        <i class="fas fa-history" style="color: var(--accent-cyan); margin-right: 8px;"></i> Timeline of Activity
+                    </h2>
+                </div>
+                <ul id="timeline-container" class="timeline">
+                    <li style="text-align: center; list-style: none;" class="text-secondary"><i class="fas fa-spinner fa-spin"></i> Loading activity logs...</li>
+                </ul>
+            </div>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/auth.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>

@@ -17,6 +17,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         initSymptoms();
     } else if (window.location.pathname.endsWith('vaccinations.html')) {
         initVaccinations();
+    } else if (window.location.pathname.endsWith('caretakers.html')) {
+        initCaretakers();
+    } else if (window.location.pathname.endsWith('assessments.html')) {
+        initAssessments();
+    } else if (window.location.pathname.endsWith('audit_logs.html')) {
+        initAuditLogs();
     }
 });
 
@@ -91,9 +97,16 @@ async function initAnimals() {
     const closeBtn = document.getElementById('modal-close-btn');
     const cancelBtn = document.getElementById('btn-cancel-modal');
     const form = document.getElementById('animal-form');
+    const searchInput = document.getElementById('search-animals');
 
     // Load animals on startup
     await loadAnimalsList();
+
+    if (searchInput) {
+        searchInput.addEventListener('input', () => {
+            filterAnimals(searchInput.value);
+        });
+    }
 
     if (addBtn && modal) {
         addBtn.addEventListener('click', () => {
@@ -154,49 +167,69 @@ async function loadAnimalsList() {
     try {
         const res = await fetch('/api/animals');
         allAnimals = await res.json();
-        grid.innerHTML = '';
-
-        if (allAnimals.length > 0) {
-            allAnimals.forEach(animal => {
-                const card = document.createElement('div');
-                card.className = 'glass-panel animal-card';
-                
-                const typeIcon = animal.animalType === 'pet' ? 'fa-paw' : (animal.animalType === 'farm' ? 'fa-tractor' : 'fa-handshake-angle');
-                
-                card.innerHTML = `
-                    <div class="animal-card-header">
-                        <h3 class="animal-card-title">${animal.name}</h3>
-                        <span class="badge" style="background: rgba(255,255,255,0.05); color:#fff; border: 1px solid var(--panel-border);">
-                            <i class="fas ${typeIcon}"></i> ${animal.animalType}
-                        </span>
-                    </div>
-                    <div class="animal-meta">
-                        <div><strong>Species:</strong> ${animal.species} (${animal.breed || 'Unknown'})</div>
-                        <div><strong>Age:</strong> ${animal.age != null ? animal.age + ' years' : 'N/A'}</div>
-                        <div><strong>Weight:</strong> ${animal.weight != null ? animal.weight + ' kg' : 'N/A'}</div>
-                        <div><strong>Owner:</strong> ${animal.ownerName || 'Unknown'}</div>
-                        <div><strong>Contact:</strong> ${animal.contactNumber || 'N/A'}</div>
-                    </div>
-                    <div class="animal-card-actions">
-                        <button class="btn-secondary" onclick="editAnimal(${animal.animalId})" style="padding: 6px 12px; font-size:13px;">
-                            <i class="fas fa-edit"></i> Edit
-                        </button>
-                        <button class="btn-danger" onclick="deleteAnimal(${animal.animalId})" style="padding: 6px 12px; font-size:13px;">
-                            <i class="fas fa-trash-can"></i> Delete
-                        </button>
-                    </div>
-                `;
-                grid.appendChild(card);
-            });
-        } else {
-            grid.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding: 3rem;" class="glass-panel text-secondary">
-                <i class="fas fa-paw" style="font-size: 40px; margin-bottom: 1rem; color: var(--text-muted);"></i>
-                <p>No animals registered yet. Click "Register Animal" to start profiling.</p>
-            </div>`;
-        }
+        renderAnimalsList(allAnimals);
     } catch (err) {
         showToast("Error loading animal registry: " + err.message, "error");
     }
+}
+
+function renderAnimalsList(list) {
+    const grid = document.getElementById('animals-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    if (list.length > 0) {
+        list.forEach(animal => {
+            const card = document.createElement('div');
+            card.className = 'glass-panel animal-card';
+            
+            const typeIcon = animal.animalType === 'pet' ? 'fa-paw' : (animal.animalType === 'farm' ? 'fa-tractor' : 'fa-handshake-angle');
+            
+            card.innerHTML = `
+                <div class="animal-card-header">
+                    <h3 class="animal-card-title">${animal.name}</h3>
+                    <span class="badge" style="background: rgba(255,255,255,0.05); color:#fff; border: 1px solid var(--panel-border);">
+                        <i class="fas ${typeIcon}"></i> ${animal.animalType}
+                    </span>
+                </div>
+                <div class="animal-meta">
+                    <div><strong>Species:</strong> ${animal.species} (${animal.breed || 'Unknown'})</div>
+                    <div><strong>Age:</strong> ${animal.age != null ? animal.age + ' years' : 'N/A'}</div>
+                    <div><strong>Weight:</strong> ${animal.weight != null ? animal.weight + ' kg' : 'N/A'}</div>
+                    <div><strong>Owner:</strong> ${animal.ownerName || 'Unknown'}</div>
+                    <div><strong>Contact:</strong> ${animal.contactNumber || 'N/A'}</div>
+                </div>
+                <div class="animal-card-actions">
+                    <button class="btn-secondary" onclick="editAnimal(${animal.animalId})" style="padding: 6px 12px; font-size:13px;">
+                        <i class="fas fa-edit"></i> Edit
+                    </button>
+                    <button class="btn-danger" onclick="deleteAnimal(${animal.animalId})" style="padding: 6px 12px; font-size:13px;">
+                        <i class="fas fa-trash-can"></i> Delete
+                    </button>
+                </div>
+            `;
+            grid.appendChild(card);
+        });
+    } else {
+        grid.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding: 3rem;" class="glass-panel text-secondary">
+            <i class="fas fa-paw" style="font-size: 40px; margin-bottom: 1rem; color: var(--text-muted);"></i>
+            <p>No animal profiles found matching the query.</p>
+        </div>`;
+    }
+}
+
+function filterAnimals(query) {
+    const lowerQuery = query.toLowerCase().trim();
+    const filtered = allAnimals.filter(animal => {
+        return (
+            animal.name.toLowerCase().includes(lowerQuery) ||
+            animal.species.toLowerCase().includes(lowerQuery) ||
+            (animal.breed && animal.breed.toLowerCase().includes(lowerQuery)) ||
+            (animal.ownerName && animal.ownerName.toLowerCase().includes(lowerQuery)) ||
+            animal.animalType.toLowerCase().includes(lowerQuery)
+        );
+    });
+    renderAnimalsList(filtered);
 }
 
 function editAnimal(id) {
@@ -321,13 +354,18 @@ async function initVaccinations() {
     const filterSelect = document.getElementById('filter-animal-select');
     const formSelect = document.getElementById('vaccination-animal-select');
     const form = document.getElementById('vaccination-form');
+    const isAdmin = document.getElementById('sidebar-user-role')?.textContent === 'Admin';
 
     // Populate dropdowns
     try {
         const res = await fetch('/api/animals');
         const animals = await res.json();
         
-        filterSelect.innerHTML = '<option value="">-- Choose Animal to View Schedule --</option>';
+        if (isAdmin) {
+            filterSelect.innerHTML = '<option value="all">All Animals (Clinic Overwatch)</option>';
+        } else {
+            filterSelect.innerHTML = '<option value="">-- Choose Animal to View Schedule --</option>';
+        }
         formSelect.innerHTML = '<option value="">-- Choose Animal --</option>';
         
         animals.forEach(a => {
@@ -336,6 +374,11 @@ async function initVaccinations() {
         });
     } catch (err) {
         showToast("Error loading animal dropdowns: " + err.message, "error");
+    }
+
+    if (isAdmin) {
+        filterSelect.value = 'all';
+        await loadVaccinations('all');
     }
 
     // Load table when filter changes
@@ -372,9 +415,9 @@ async function initVaccinations() {
                 if (data.success) {
                     showToast(data.message, 'success');
                     form.reset();
-                    // If filter matches scheduled animal, reload
-                    if (filterSelect.value === animalId) {
-                        loadVaccinations(animalId);
+                    // If filter matches scheduled animal or is all, reload
+                    if (filterSelect.value === animalId || filterSelect.value === 'all') {
+                        loadVaccinations(filterSelect.value);
                     } else {
                         filterSelect.value = animalId;
                         loadVaccinations(animalId);
@@ -393,15 +436,40 @@ async function loadVaccinations(animalId) {
     const tbody = document.getElementById('vaccinations-body');
     if (!tbody) return;
 
-    if (!animalId) {
+    if (!animalId || animalId === '') {
         tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;" class="text-secondary">Please select an animal above to inspect schedules.</td></tr>`;
         return;
     }
 
     try {
-        const res = await fetch(`/api/vaccinations?animalId=${animalId}`);
+        const url = animalId === 'all' ? '/api/vaccinations' : `/api/vaccinations?animalId=${animalId}`;
+        const res = await fetch(url);
         const list = await res.json();
         tbody.innerHTML = '';
+
+        const thead = tbody.closest('table').querySelector('thead tr');
+        const isAll = (animalId === 'all');
+        const totalCols = isAll ? 7 : 5;
+
+        if (isAll) {
+            thead.innerHTML = `
+                <th>Animal</th>
+                <th>Caretaker</th>
+                <th>Vaccine</th>
+                <th>Scheduled Date</th>
+                <th>Administered</th>
+                <th>Status</th>
+                <th>Action</th>
+            `;
+        } else {
+            thead.innerHTML = `
+                <th>Vaccine</th>
+                <th>Scheduled Date</th>
+                <th>Administered</th>
+                <th>Status</th>
+                <th>Action</th>
+            `;
+        }
 
         if (list.length > 0) {
             list.forEach(v => {
@@ -412,13 +480,22 @@ async function loadVaccinations(animalId) {
                 let actionBtn = '';
                 if (v.status !== 'Completed') {
                     actionBtn = `
-                        <button class="btn-primary" onclick="markVaccineComplete(${v.vaccinationId}, ${v.animalId})" style="padding:4px 8px; font-size:12px; font-weight:500; border-radius:6px; box-shadow:none;">
+                        <button class="btn-primary" onclick="markVaccineComplete(${v.vaccinationId}, '${animalId}')" style="padding:4px 8px; font-size:12px; font-weight:500; border-radius:6px; box-shadow:none;">
                             <i class="fas fa-check"></i> Complete
                         </button>
                     `;
                 }
                 
+                let animalCells = '';
+                if (isAll) {
+                    animalCells = `
+                        <td><strong>${v.animalName}</strong></td>
+                        <td>${v.ownerName || '—'}</td>
+                    `;
+                }
+
                 tr.innerHTML = `
+                    ${animalCells}
                     <td><strong>${v.vaccineName}</strong></td>
                     <td>${v.scheduledDate}</td>
                     <td>${adminDateStr}</td>
@@ -426,7 +503,7 @@ async function loadVaccinations(animalId) {
                     <td>
                         <div style="display:flex; gap:6px; align-items:center;">
                             ${actionBtn}
-                            <button class="btn-danger" onclick="deleteVaccine(${v.vaccinationId}, ${v.animalId})" style="padding:4px 8px; font-size:12px; font-weight:500; border-radius:6px;">
+                            <button class="btn-danger" onclick="deleteVaccine(${v.vaccinationId}, '${animalId}')" style="padding:4px 8px; font-size:12px; font-weight:500; border-radius:6px;">
                                 <i class="fas fa-trash"></i>
                             </button>
                         </div>
@@ -435,7 +512,7 @@ async function loadVaccinations(animalId) {
                 tbody.appendChild(tr);
             });
         } else {
-            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;" class="text-secondary">No vaccinations logged for this animal.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="${totalCols}" style="text-align:center;" class="text-secondary">No vaccinations logged.</td></tr>`;
         }
     } catch (err) {
         showToast("Error loading schedule: " + err.message, "error");
@@ -479,5 +556,214 @@ async function deleteVaccine(vacId, animalId) {
         }
     } catch (err) {
         showToast("Connection error: " + err.message, "error");
+    }
+}
+
+// ==========================================
+// 5. USER DIRECTORY & ROLE MANAGEMENT
+// ==========================================
+let allCaretakers = [];
+
+async function initCaretakers() {
+    await loadCaretakersList();
+}
+
+async function loadCaretakersList() {
+    const tbody = document.getElementById('caretakers-table-body');
+    if (!tbody) return;
+
+    try {
+        const res = await fetch('/api/users');
+        allCaretakers = await res.json();
+        tbody.innerHTML = '';
+
+        if (allCaretakers.length > 0) {
+            allCaretakers.forEach(caretaker => {
+                const tr = document.createElement('tr');
+                const roleBadge = caretaker.role === 'Admin' ? '<span class="badge high">Admin</span>' : '<span class="badge low">User</span>';
+                
+                const roleActionBtn = caretaker.role === 'Admin' 
+                    ? `<button class="btn-secondary" onclick="updateUserRole(${caretaker.userId}, 'User')" style="padding:4px 8px; font-size:12px;"><i class="fas fa-user-minus"></i> Demote</button>`
+                    : `<button class="btn-primary" onclick="updateUserRole(${caretaker.userId}, 'Admin')" style="padding:4px 8px; font-size:12px;"><i class="fas fa-user-plus"></i> Promote</button>`;
+                
+                const deleteActionBtn = `<button class="btn-danger" onclick="deleteUser(${caretaker.userId})" style="padding:4px 8px; font-size:12px;"><i class="fas fa-trash"></i> Delete</button>`;
+                
+                tr.innerHTML = `
+                    <td><strong>${caretaker.username}</strong></td>
+                    <td>${caretaker.fullName || '—'}</td>
+                    <td>${caretaker.email || '—'}</td>
+                    <td><small>${caretaker.createdDate.substring(0,10)}</small></td>
+                    <td>${roleBadge}</td>
+                    <td>
+                        <div style="display:flex; gap:6px;">
+                            ${roleActionBtn}
+                            ${deleteActionBtn}
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        } else {
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;" class="text-secondary">No caretaker accounts found.</td></tr>`;
+        }
+    } catch (err) {
+        showToast("Error loading users: " + err.message, "error");
+    }
+}
+
+async function updateUserRole(userId, newRole) {
+    try {
+        const res = await fetch('/api/users', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: userId, role: newRole })
+        });
+        const data = await res.json();
+        if (data.success) {
+            showToast(data.message, 'success');
+            await loadCaretakersList();
+            checkAuth(false, false);
+        } else {
+            showToast(data.message, 'error');
+        }
+    } catch (err) {
+        showToast("Error updating user role: " + err.message, "error");
+    }
+}
+
+async function deleteUser(userId) {
+    if (!confirm("Are you sure you want to delete this caretaker account? This action is permanent and will delete all their registered animals and history!")) return;
+    try {
+        const res = await fetch(`/api/users?id=${userId}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (data.success) {
+            showToast(data.message, 'success');
+            await loadCaretakersList();
+        } else {
+            showToast(data.message, 'error');
+        }
+    } catch (err) {
+        showToast("Error deleting user: " + err.message, "error");
+    }
+}
+
+// ==========================================
+// 6. MASTER ASSESSMENT REGISTRY
+// ==========================================
+let allAssessments = [];
+
+async function initAssessments() {
+    const searchInput = document.getElementById('search-assessments');
+    await loadAssessmentsList();
+
+    if (searchInput) {
+        searchInput.addEventListener('input', () => {
+            filterAssessments(searchInput.value);
+        });
+    }
+}
+
+async function loadAssessmentsList() {
+    const tbody = document.getElementById('assessments-table-body');
+    if (!tbody) return;
+
+    try {
+        const res = await fetch('/api/assessments');
+        allAssessments = await res.json();
+        renderAssessmentsTable(allAssessments);
+    } catch (err) {
+        showToast("Error loading health assessments: " + err.message, "error");
+    }
+}
+
+function renderAssessmentsTable(list) {
+    const tbody = document.getElementById('assessments-table-body');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    if (list.length > 0) {
+        list.forEach(item => {
+            const tr = document.createElement('tr');
+            const riskBadge = `<span class="badge ${item.riskLevel.toLowerCase()}">${item.riskLevel}</span>`;
+            const dateStr = item.assessmentDate.substring(0, 16);
+            
+            tr.innerHTML = `
+                <td><strong>${item.animalName}</strong></td>
+                <td>${item.ownerName || '—'}</td>
+                <td>${riskBadge}</td>
+                <td>${item.possibleCondition}</td>
+                <td><small>${item.recommendedAction}</small></td>
+                <td><small>${dateStr}</small></td>
+            `;
+            tbody.appendChild(tr);
+        });
+    } else {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;" class="text-secondary">No assessments found.</td></tr>`;
+    }
+}
+
+function filterAssessments(query) {
+    const lowerQuery = query.toLowerCase().trim();
+    const filtered = allAssessments.filter(item => {
+        return (
+            item.animalName.toLowerCase().includes(lowerQuery) ||
+            (item.ownerName && item.ownerName.toLowerCase().includes(lowerQuery)) ||
+            item.possibleCondition.toLowerCase().includes(lowerQuery) ||
+            item.riskLevel.toLowerCase().includes(lowerQuery)
+        );
+    });
+    renderAssessmentsTable(filtered);
+}
+
+// ==========================================
+// 7. AUDIT LOGS & SYSTEM INSIGHTS
+// ==========================================
+async function initAuditLogs() {
+    const container = document.getElementById('timeline-container');
+    if (!container) return;
+
+    try {
+        const res = await fetch('/api/audit-logs');
+        const logs = await res.json();
+        container.innerHTML = '';
+
+        if (logs.length > 0) {
+            logs.forEach(log => {
+                const li = document.createElement('li');
+                li.className = 'timeline-item';
+                
+                let markerClass = 'user-registered';
+                let iconClass = 'fa-user-plus';
+                
+                if (log.activityType === 'Animal Registered') {
+                    markerClass = 'animal-registered';
+                    iconClass = 'fa-paw';
+                } else if (log.activityType === 'Diagnosis Run') {
+                    markerClass = 'diagnosis-run';
+                    iconClass = 'fa-stethoscope';
+                } else if (log.activityType === 'Vaccination Scheduled') {
+                    markerClass = 'vaccination-scheduled';
+                    iconClass = 'fa-syringe';
+                }
+                
+                const timeStr = log.timestamp.substring(0, 16);
+                
+                li.innerHTML = `
+                    <div class="timeline-marker ${markerClass}">
+                        <i class="fas ${iconClass}"></i>
+                    </div>
+                    <div class="timeline-content">
+                        <span class="timeline-time">${timeStr}</span>
+                        <div class="timeline-title">${log.activityType}</div>
+                        <div class="timeline-details">${log.details}</div>
+                    </div>
+                `;
+                container.appendChild(li);
+            });
+        } else {
+            container.innerHTML = `<li style="text-align: center; list-style: none;" class="text-secondary">No system activity logged.</li>`;
+        }
+    } catch (err) {
+        showToast("Error loading activity logs: " + err.message, "error");
     }
 }

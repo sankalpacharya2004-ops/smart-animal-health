@@ -13,6 +13,9 @@ public class Vaccination {
     private String notes;
     private Timestamp createdDate;
 
+    private String animalName;
+    private String ownerName;
+
     public Vaccination() {}
 
     public Vaccination(int vaccinationId, int animalId, String vaccineName, Date scheduledDate, Date administeredDate, String status, String notes, Timestamp createdDate) {
@@ -24,6 +27,22 @@ public class Vaccination {
         this.status = status;
         this.notes = notes;
         this.createdDate = createdDate;
+    }
+
+    public String getAnimalName() {
+        return animalName;
+    }
+
+    public void setAnimalName(String animalName) {
+        this.animalName = animalName;
+    }
+
+    public String getOwnerName() {
+        return ownerName;
+    }
+
+    public void setOwnerName(String ownerName) {
+        this.ownerName = ownerName;
     }
 
     public int getVaccinationId() {

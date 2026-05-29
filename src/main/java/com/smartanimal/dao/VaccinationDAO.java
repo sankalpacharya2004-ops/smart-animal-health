@@ -148,4 +148,24 @@ public class VaccinationDAO {
         }
         return false;
     }
+
+    public List<Vaccination> getAllVaccinationsWithDetails() {
+        List<Vaccination> list = new ArrayList<>();
+        String sql = "SELECT v.*, a.name AS animal_name, a.owner_name FROM vaccinations v JOIN animals a ON v.animal_id = a.animal_id ORDER BY v.scheduled_date ASC";
+        try (Connection conn = DBConnection.getConnection()) {
+            syncVaccinationStatuses(conn);
+            try (PreparedStatement stmt = conn.prepareStatement(sql);
+                 ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    Vaccination v = extractVaccination(rs);
+                    v.setAnimalName(rs.getString("animal_name"));
+                    v.setOwnerName(rs.getString("owner_name"));
+                    list.add(v);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
 }

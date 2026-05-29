@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Animal Health - Health Assessments Registry</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+    <!-- Ambient glowing backgrounds -->
+    <div class="ambient-glow glow-top-left"></div>
+    <div class="ambient-glow glow-bottom-right"></div>
+
+    <div class="app-container">
+        
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar glass-panel" style="border-radius: 0; border: none; border-right: 1px solid var(--panel-border);">
+            <div class="brand-section">
+                <div class="brand-logo">
+                    <i class="fas fa-heart-pulse"></i>
+                </div>
+                <span class="brand-title">Animal Health</span>
+            </div>
+
+            <nav>
+                <ul class="nav-menu">
+                    <li>
+                        <a href="dashboard.html" class="nav-link">
+                            <i class="fas fa-chart-pie"></i>
+                            <span>Dashboard</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="animals.html" class="nav-link">
+                            <i class="fas fa-paw"></i>
+                            <span>Animals Registry</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="symptoms.html" class="nav-link">
+                            <i class="fas fa-stethoscope"></i>
+                            <span>Log Symptoms</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="vaccinations.html" class="nav-link">
+                            <i class="fas fa-syringe"></i>
+                            <span>Vaccinations</span>
+                        </a>
+                    </li>
+                    <li class="admin-only" style="display: none;">
+                        <a href="caretakers.html" class="nav-link">
+                            <i class="fas fa-users-cog"></i>
+                            <span>Caretakers</span>
+                        </a>
+                    </li>
+                    <li class="admin-only" style="display: none;">
+                        <a href="assessments.html" class="nav-link active">
+                            <i class="fas fa-notes-medical"></i>
+                            <span>Health Assessments</span>
+                        </a>
+                    </li>
+                    <li class="admin-only" style="display: none;">
+                        <a href="audit_logs.html" class="nav-link">
+                            <i class="fas fa-clipboard-list"></i>
+                            <span>Audit Logs</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+
+            <div class="user-profile-section">
+                <div class="user-info">
+                    <div id="sidebar-user-avatar" class="user-avatar">U</div>
+                    <div class="user-details">
+                        <span id="sidebar-user-name" class="user-name">Loading...</span>
+                        <span id="sidebar-user-role" class="user-role">User</span>
+                    </div>
+                </div>
+                <button onclick="logout()" class="btn-secondary" style="width: 100%; justify-content: center; padding: 8px;">
+                    <i class="fas fa-right-from-bracket"></i> Sign Out
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Workspace -->
+        <main class="main-content">
+            <header class="header-container">
+                <div>
+                    <h1 class="page-title">Health Assessments Registry</h1>
+                    <p class="page-subtitle">Inspect historical rule-based health evaluations, risks, and vet guidelines across the entire clinic system.</p>
+                </div>
+            </header>
+
+            <!-- Search box -->
+            <div class="glass-panel" style="padding: 0.8rem 1.2rem; margin-bottom: 1.5rem; display: flex; gap: 1rem; align-items: center; border-radius: 12px;">
+                <i class="fas fa-magnifying-glass" style="color: var(--accent-cyan); font-size: 1.1rem;"></i>
+                <input type="text" id="search-assessments" placeholder="Search assessments by animal name, owner, condition, or risk level..." style="flex-grow: 1; border: none; background: transparent; color: #fff; font-size: 15px; outline: none;">
+            </div>
+
+            <!-- Assessments Table -->
+            <div class="glass-panel" style="display: flex; flex-direction: column;">
+                <div class="panel-header" style="border-bottom: 1px solid var(--panel-border);">
+                    <h2 class="panel-title">
+                        <i class="fas fa-file-medical" style="color: var(--accent-emerald); margin-right: 8px;"></i> Historical Assessments
+                    </h2>
+                </div>
+                <div class="table-container" style="padding-top: 0.5rem;">
+                    <table class="custom-table">
+                        <thead>
+                            <tr>
+                                <th>Animal</th>
+                                <th>Caretaker / Owner</th>
+                                <th>Risk Level</th>
+                                <th>Possible Condition</th>
+                                <th>Recommended Actions</th>
+                                <th>Date Assessed</th>
+                            </tr>
+                        </thead>
+                        <tbody id="assessments-table-body">
+                            <tr><td colspan="6" style="text-align:center;" class="text-secondary"><i class="fas fa-spinner fa-spin"></i> Loading assessments history...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/auth.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>

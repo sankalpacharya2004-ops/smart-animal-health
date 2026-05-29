@@ -99,10 +99,15 @@ public class AssessmentServlet extends HttpServlet {
             }
         } 
         else {
-            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            jsonResponse.addProperty("success", false);
-            jsonResponse.addProperty("message", "Missing query parameter: animalId or symptomId.");
-            response.getWriter().write(gson.toJson(jsonResponse));
+            if ("Admin".equalsIgnoreCase(user.getRole())) {
+                List<HealthAssessment> list = assessmentDAO.getAllAssessments();
+                response.getWriter().write(gson.toJson(list));
+            } else {
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                jsonResponse.addProperty("success", false);
+                jsonResponse.addProperty("message", "Missing query parameter: animalId or symptomId.");
+                response.getWriter().write(gson.toJson(jsonResponse));
+            }
         }
     }
 }

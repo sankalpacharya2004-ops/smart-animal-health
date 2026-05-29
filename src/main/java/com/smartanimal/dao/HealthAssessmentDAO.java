@@ -93,4 +93,22 @@ public class HealthAssessmentDAO {
         }
         return null;
     }
+
+    public List<HealthAssessment> getAllAssessments() {
+        List<HealthAssessment> list = new ArrayList<>();
+        String sql = "SELECT h.*, a.name AS animal_name, a.owner_name FROM health_assessments h JOIN animals a ON h.animal_id = a.animal_id ORDER BY h.assessment_date DESC";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
+                HealthAssessment ha = extractAssessment(rs);
+                ha.setAnimalName(rs.getString("animal_name"));
+                ha.setOwnerName(rs.getString("owner_name"));
+                list.add(ha);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
 }

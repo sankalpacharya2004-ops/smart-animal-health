@@ -36,6 +36,24 @@
     </servlet-mapping>
 
     <servlet>
+        <servlet-name>UserServlet</servlet-name>
+        <servlet-class>com.smartanimal.servlet.UserServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>UserServlet</servlet-name>
+        <url-pattern>/api/users</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>AuditLogServlet</servlet-name>
+        <servlet-class>com.smartanimal.servlet.AuditLogServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>AuditLogServlet</servlet-name>
+        <url-pattern>/api/audit-logs</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
         <servlet-name>AnimalServlet</servlet-name>
         <servlet-class>com.smartanimal.servlet.AnimalServlet</servlet-class>
     </servlet>
