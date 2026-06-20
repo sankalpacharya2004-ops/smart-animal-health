@@ -82,10 +82,10 @@ public class UserServlet extends HttpServlet {
         int targetUserId = body.get("userId").getAsInt();
         String targetRole = body.get("role").getAsString();
 
-        if (!"Admin".equalsIgnoreCase(targetRole) && !"User".equalsIgnoreCase(targetRole)) {
+        if (!"Admin".equalsIgnoreCase(targetRole) && !"User".equalsIgnoreCase(targetRole) && !"Doctor".equalsIgnoreCase(targetRole)) {
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             jsonResponse.addProperty("success", false);
-            jsonResponse.addProperty("message", "Invalid role type. Must be 'Admin' or 'User'.");
+            jsonResponse.addProperty("message", "Invalid role type. Must be 'Admin', 'Doctor', or 'User'.");
             response.getWriter().write(gson.toJson(jsonResponse));
             return;
         }

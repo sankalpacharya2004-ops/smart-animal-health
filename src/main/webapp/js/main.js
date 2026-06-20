@@ -4,11 +4,14 @@
 document.addEventListener('DOMContentLoaded', async () => {
     // Ensure user is authenticated for app pages
     const path = window.location.pathname;
-    const isLoginPage = path.endsWith('index.html') || path.endsWith('/') || path.endsWith('') ||
-                        path.endsWith('user_login.html') || path.endsWith('doctor_login.html') || path.endsWith('admin_login.html');
+    const loginPages = ['index.html', 'user_login.html', 'admin_login.html'];
+    const isLoginPage = loginPages.some(page => path.endsWith(page)) || 
+                        path.endsWith('/') || 
+                        path.endsWith('/smart-animal-health');
     
     const user = await checkAuth(!isLoginPage, isLoginPage);
     if (!user && !isLoginPage) return; // Redirected
+    window.currentUser = user;
 
     // Enforce role-based page access for authenticated users
     if (user && !isLoginPage) {
@@ -618,13 +621,36 @@ async function loadCaretakersList() {
         if (allCaretakers.length > 0) {
             allCaretakers.forEach(caretaker => {
                 const tr = document.createElement('tr');
-                const roleBadge = caretaker.role === 'Admin' ? '<span class="badge high">Admin</span>' : '<span class="badge low">User</span>';
                 
-                const roleActionBtn = caretaker.role === 'Admin' 
-                    ? `<button class="btn-secondary" onclick="updateUserRole(${caretaker.userId}, 'User')" style="padding:4px 8px; font-size:12px;"><i class="fas fa-user-minus"></i> Demote</button>`
-                    : `<button class="btn-primary" onclick="updateUserRole(${caretaker.userId}, 'Admin')" style="padding:4px 8px; font-size:12px;"><i class="fas fa-user-plus"></i> Promote</button>`;
+                let roleBadge = '';
+                if (caretaker.role === 'Admin') {
+                    roleBadge = '<span class="badge high">Admin</span>';
+                } else if (caretaker.role === 'Doctor') {
+                    roleBadge = '<span class="badge doctor">Doctor</span>';
+                } else {
+                    roleBadge = '<span class="badge low">User</span>';
+                }
                 
-                const deleteActionBtn = `<button class="btn-danger" onclick="deleteUser(${caretaker.userId})" style="padding:4px 8px; font-size:12px;"><i class="fas fa-trash"></i> Delete</button>`;
+                const isSelf = window.currentUser && window.currentUser.userId === caretaker.userId;
+                
+                let roleSelect = '';
+                if (isSelf) {
+                    roleSelect = `<select disabled style="padding: 4px 8px; font-size: 12px; border-radius: 6px; background: rgba(255,255,255,0.05); border: 1px solid var(--panel-border); color: var(--text-muted); cursor: not-allowed; outline: none;">
+                        <option value="Admin" selected>Admin (You)</option>
+                    </select>`;
+                } else {
+                    roleSelect = `
+                        <select onchange="updateUserRole(${caretaker.userId}, this.value)" style="padding: 4px 8px; font-size: 12px; border-radius: 6px; background: rgba(255,255,255,0.05); border: 1px solid var(--panel-border); color: #fff; cursor: pointer; outline: none;">
+                            <option value="User" ${caretaker.role === 'User' ? 'selected' : ''}>User</option>
+                            <option value="Doctor" ${caretaker.role === 'Doctor' ? 'selected' : ''}>Doctor</option>
+                            <option value="Admin" ${caretaker.role === 'Admin' ? 'selected' : ''}>Admin</option>
+                        </select>
+                    `;
+                }
+                
+                const deleteActionBtn = isSelf 
+                    ? `<button class="btn-danger" disabled style="padding:4px 8px; font-size:12px; opacity:0.5; cursor:not-allowed;"><i class="fas fa-trash"></i> Delete</button>`
+                    : `<button class="btn-danger" onclick="deleteUser(${caretaker.userId})" style="padding:4px 8px; font-size:12px;"><i class="fas fa-trash"></i> Delete</button>`;
                 
                 tr.innerHTML = `
                     <td><strong>${caretaker.username}</strong></td>
@@ -633,8 +659,8 @@ async function loadCaretakersList() {
                     <td><small>${caretaker.createdDate.substring(0,10)}</small></td>
                     <td>${roleBadge}</td>
                     <td>
-                        <div style="display:flex; gap:6px;">
-                            ${roleActionBtn}
+                        <div style="display:flex; gap:6px; align-items:center;">
+                            ${roleSelect}
                             ${deleteActionBtn}
                         </div>
                     </td>

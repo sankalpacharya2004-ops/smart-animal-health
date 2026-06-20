@@ -85,8 +85,45 @@
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
             const user = await checkAuth(false, false); // Check without auto-redirecting
-            if (user && user.role === 'User') {
-                window.location.href = 'dashboard.html';
+            if (user) {
+                if (user.role === 'Doctor') {
+                    window.location.href = 'doctor_dashboard.html';
+                } else if (user.role === 'Admin') {
+                    window.location.href = 'caretakers.html';
+                } else {
+                    window.location.href = 'dashboard.html';
+                }
+                return;
+            }
+
+            const params = new URLSearchParams(window.location.search);
+            const portal = params.get('portal');
+            if (portal === 'vet') {
+                document.title = "Smart Animal Health - Veterinary Portal";
+                const titleEl = document.querySelector('.auth-title');
+                if (titleEl) titleEl.textContent = "Veterinary Portal";
+                const subtitleEl = document.querySelector('.auth-subtitle');
+                if (subtitleEl) subtitleEl.textContent = "Verify clinical reports, override automated triages, and log vaccine completion notes.";
+                const logoEl = document.querySelector('.auth-logo');
+                if (logoEl) {
+                    logoEl.style.background = "linear-gradient(135deg, var(--accent-cyan), var(--accent-blue))";
+                    logoEl.style.boxShadow = "0 0 20px rgba(6, 182, 212, 0.4)";
+                    logoEl.innerHTML = '<i class="fas fa-user-doctor"></i>';
+                }
+                
+                const loginUserLabel = document.querySelector('label[for="login-username"]');
+                if (loginUserLabel) loginUserLabel.textContent = "Veterinarian Username";
+                const loginUserField = document.getElementById('login-username');
+                if (loginUserField) loginUserField.placeholder = "Enter veterinarian username";
+
+                const submitBtn = document.querySelector('#login-form button[type="submit"]');
+                if (submitBtn) {
+                    submitBtn.style.background = "linear-gradient(135deg, var(--accent-cyan) 0%, var(--accent-blue) 100%)";
+                    submitBtn.style.boxShadow = "0 4px 15px rgba(6, 182, 212, 0.3)";
+                    submitBtn.innerHTML = '<i class="fas fa-right-from-bracket"></i> Vet Login';
+                }
+                const authTabs = document.querySelector('.auth-tabs');
+                if (authTabs) authTabs.style.display = 'none';
             }
         });
 
