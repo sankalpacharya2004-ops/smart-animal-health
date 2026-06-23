@@ -1,13 +1,53 @@
 // main.js
 // Client-side interactions and API communications
 
+// Helper functions for safe date formatting
+function formatDateTime(dateVal) {
+    if (!dateVal) return '—';
+    if (typeof dateVal === 'string') {
+        return dateVal.substring(0, 16);
+    }
+    try {
+        if (typeof dateVal === 'object' && dateVal.time) {
+            const d = new Date(dateVal.time);
+            return isNaN(d.getTime()) ? '—' : d.toISOString().replace('T', ' ').substring(0, 16);
+        }
+        const d = new Date(dateVal);
+        return isNaN(d.getTime()) ? '—' : d.toISOString().replace('T', ' ').substring(0, 16);
+    } catch (e) {
+        console.error("Error parsing date:", dateVal, e);
+        return '—';
+    }
+}
+
+function formatDateOnly(dateVal) {
+    if (!dateVal) return '—';
+    if (typeof dateVal === 'string') {
+        return dateVal.substring(0, 10);
+    }
+    try {
+        if (typeof dateVal === 'object' && dateVal.time) {
+            const d = new Date(dateVal.time);
+            return isNaN(d.getTime()) ? '—' : d.toISOString().substring(0, 10);
+        }
+        const d = new Date(dateVal);
+        return isNaN(d.getTime()) ? '—' : d.toISOString().substring(0, 10);
+    } catch (e) {
+        return '—';
+    }
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
     // Ensure user is authenticated for app pages
     const path = window.location.pathname;
+    const pathSegments = path.split('/');
+    let pageName = pathSegments[pathSegments.length - 1];
+    if (!pageName || pageName === 'smart-animal-health') {
+        pageName = 'index.html';
+    }
+
     const loginPages = ['index.html', 'user_login.html', 'admin_login.html'];
-    const isLoginPage = loginPages.some(page => path.endsWith(page)) || 
-                        path.endsWith('/') || 
-                        path.endsWith('/smart-animal-health');
+    const isLoginPage = loginPages.includes(pageName);
     
     const user = await checkAuth(!isLoginPage, isLoginPage);
     if (!user && !isLoginPage) return; // Redirected
@@ -16,22 +56,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Enforce role-based page access for authenticated users
     if (user && !isLoginPage) {
         if (user.role === 'Admin') {
-            const allowedPages = ['caretakers.html', 'assessments.html', 'audit_logs.html', 'medical_history.html'];
-            const currentPageAllowed = allowedPages.some(page => path.endsWith(page));
+            const allowedPages = ['caretakers.html', 'assessments.html', 'audit_logs.html', 'medical_history.html', 'approvals.html', 'appointments.html', 'appointment.html'];
+            const currentPageAllowed = allowedPages.includes(pageName);
             if (!currentPageAllowed) {
                 window.location.href = 'caretakers.html';
                 return;
             }
+            updateApprovalsBadge();
         } else if (user.role === 'Doctor') {
-            const allowedPages = ['doctor_dashboard.html', 'medical_history.html', 'animals.html', 'symptoms.html', 'vaccinations.html'];
-            const currentPageAllowed = allowedPages.some(page => path.endsWith(page));
+            const allowedPages = ['doctor_dashboard.html', 'medical_history.html', 'animals.html', 'symptoms.html', 'vaccinations.html', 'appointments.html', 'appointment.html'];
+            const currentPageAllowed = allowedPages.includes(pageName);
             if (!currentPageAllowed) {
                 window.location.href = 'doctor_dashboard.html';
                 return;
             }
         } else if (user.role === 'User') {
-            const allowedPages = ['dashboard.html', 'animals.html', 'symptoms.html', 'vaccinations.html', 'medical_history.html'];
-            const currentPageAllowed = allowedPages.some(page => path.endsWith(page));
+            const allowedPages = ['dashboard.html', 'animals.html', 'symptoms.html', 'vaccinations.html', 'medical_history.html', 'appointments.html', 'appointment.html'];
+            const currentPageAllowed = allowedPages.includes(pageName);
             if (!currentPageAllowed) {
                 window.location.href = 'dashboard.html';
                 return;
@@ -46,24 +87,28 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Page routers
-    if (path.endsWith('dashboard.html')) {
+    if (pageName === 'dashboard.html') {
         initDashboard();
-    } else if (path.endsWith('animals.html')) {
+    } else if (pageName === 'animals.html') {
         initAnimals();
-    } else if (path.endsWith('symptoms.html')) {
+    } else if (pageName === 'symptoms.html') {
         initSymptoms();
-    } else if (path.endsWith('vaccinations.html')) {
+    } else if (pageName === 'vaccinations.html') {
         initVaccinations();
-    } else if (path.endsWith('caretakers.html')) {
+    } else if (pageName === 'caretakers.html') {
         initCaretakers();
-    } else if (path.endsWith('assessments.html')) {
+    } else if (pageName === 'assessments.html') {
         initAssessments();
-    } else if (path.endsWith('audit_logs.html')) {
+    } else if (pageName === 'audit_logs.html') {
         initAuditLogs();
-    } else if (path.endsWith('doctor_dashboard.html')) {
+    } else if (pageName === 'doctor_dashboard.html') {
         initDoctorDashboard();
-    } else if (path.endsWith('medical_history.html')) {
+    } else if (pageName === 'medical_history.html') {
         initMedicalHistory();
+    } else if (pageName === 'approvals.html') {
+        initApprovals();
+    } else if (pageName === 'appointments.html' || pageName === 'appointment.html') {
+        initAppointments();
     }
 });
 
@@ -89,7 +134,7 @@ async function initDashboard() {
                 const tr = document.createElement('tr');
                 const riskBadge = `<span class="badge ${item.riskLevel.toLowerCase()}">${item.riskLevel}</span>`;
                 // Format Date
-                const dateStr = item.assessmentDate.substring(0, 16);
+                const dateStr = formatDateTime(item.assessmentDate);
                 
                 tr.innerHTML = `
                     <td><strong>${item.animalName}</strong></td>
@@ -618,8 +663,38 @@ async function loadCaretakersList() {
         allCaretakers = await res.json();
         tbody.innerHTML = '';
 
-        if (allCaretakers.length > 0) {
-            allCaretakers.forEach(caretaker => {
+        // Filter out unapproved doctors from the caretakers active directory
+        const activeUsers = allCaretakers.filter(user => !(user.role === 'Doctor' && !user.isApproved));
+
+        // Check for pending doctor approvals and show alert banner
+        const pendingDoctors = allCaretakers.filter(user => user.role === 'Doctor' && !user.isApproved);
+        const bannerEl = document.getElementById('pending-approvals-banner');
+        if (bannerEl) {
+            if (pendingDoctors.length > 0) {
+                bannerEl.innerHTML = `
+                    <div class="glass-panel alert-card warning" style="margin-top: 1rem; margin-bottom: 0.5rem; border: 1px solid rgba(244, 63, 94, 0.3); background: rgba(244, 63, 94, 0.05); display: flex; align-items: center; justify-content: space-between; padding: 1.2rem; gap: 1rem; border-radius: 12px;">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <div class="alert-icon-wrapper" style="background: rgba(244, 63, 94, 0.1); color: var(--accent-rose); width: 42px; height: 42px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px;">
+                                <i class="fas fa-user-clock"></i>
+                            </div>
+                            <div style="text-align: left;">
+                                <h3 style="font-size: 15px; font-weight: 600; color: #fff; margin: 0;">Pending Doctor Registrations</h3>
+                                <p class="text-secondary" style="font-size: 13px; margin: 4px 0 0 0;">There are ${pendingDoctors.length} veterinarian registration request(s) awaiting your review.</p>
+                            </div>
+                        </div>
+                        <a href="approvals.html" class="btn-primary" style="padding: 8px 16px; font-size: 13px; background: linear-gradient(135deg, var(--accent-rose) 0%, var(--accent-blue) 100%); box-shadow: 0 4px 10px rgba(244, 63, 94, 0.2); text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-user-check"></i> Review Requests
+                        </a>
+                    </div>
+                `;
+            } else {
+                bannerEl.innerHTML = '';
+            }
+        }
+
+        // Render Active Users
+        if (activeUsers.length > 0) {
+            activeUsers.forEach(caretaker => {
                 const tr = document.createElement('tr');
                 
                 let roleBadge = '';
@@ -656,7 +731,7 @@ async function loadCaretakersList() {
                     <td><strong>${caretaker.username}</strong></td>
                     <td>${caretaker.fullName || '—'}</td>
                     <td>${caretaker.email || '—'}</td>
-                    <td><small>${caretaker.createdDate.substring(0,10)}</small></td>
+                    <td><small>${formatDateOnly(caretaker.createdDate)}</small></td>
                     <td>${roleBadge}</td>
                     <td>
                         <div style="display:flex; gap:6px; align-items:center;">
@@ -672,6 +747,106 @@ async function loadCaretakersList() {
         }
     } catch (err) {
         showToast("Error loading users: " + err.message, "error");
+    }
+}
+
+async function initApprovals() {
+    const tbody = document.getElementById('approvals-table-body');
+    const tableEl = document.getElementById('approvals-table');
+    const emptyStateEl = document.getElementById('approvals-empty-state');
+    if (!tbody) return;
+
+    try {
+        const res = await fetch('/api/users');
+        const allUsers = await res.json();
+        tbody.innerHTML = '';
+
+        const pendingDoctors = allUsers.filter(user => user.role === 'Doctor' && !user.isApproved);
+
+        if (pendingDoctors.length > 0) {
+            if (tableEl) tableEl.style.display = 'table';
+            if (emptyStateEl) emptyStateEl.style.display = 'none';
+
+            pendingDoctors.forEach(doc => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>
+                        <strong>${doc.fullName || doc.username}</strong><br>
+                        <small class="text-secondary">@${doc.username}</small>
+                    </td>
+                    <td>${doc.qualification || '—'}</td>
+                    <td>${doc.experience !== undefined ? doc.experience + ' Years' : '—'}</td>
+                    <td>${doc.address || '—'}</td>
+                    <td>
+                        <small>${doc.email || '—'}</small><br>
+                        <small class="text-secondary">${doc.phoneNo || '—'}</small>
+                    </td>
+                    <td><code>${doc.certificate || '—'}</code></td>
+                    <td>
+                        <button class="btn-primary" onclick="approveDoctor(${doc.userId})" style="padding: 4px 10px; font-size: 12px; background: linear-gradient(135deg, var(--accent-cyan) 0%, var(--accent-blue) 100%); box-shadow: 0 4px 10px rgba(6, 182, 212, 0.2);"><i class="fas fa-check"></i> Approve</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        } else {
+            if (tableEl) tableEl.style.display = 'none';
+            if (emptyStateEl) emptyStateEl.style.display = 'flex';
+        }
+    } catch (err) {
+        showToast("Error loading registration requests: " + err.message, "error");
+    }
+}
+
+async function approveDoctor(userId) {
+    try {
+        const res = await fetch('/api/users', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: userId, isApproved: true })
+        });
+        const data = await res.json();
+        if (data.success) {
+            showToast(data.message, 'success');
+            const path = window.location.pathname;
+            if (path.endsWith('approvals.html')) {
+                await initApprovals();
+            } else {
+                await loadCaretakersList();
+            }
+            updateApprovalsBadge();
+        } else {
+            showToast(data.message, 'error');
+        }
+    } catch (err) {
+        showToast("Error approving doctor: " + err.message, "error");
+    }
+}
+
+async function updateApprovalsBadge() {
+    try {
+        const res = await fetch('/api/users');
+        if (!res.ok) return;
+        const allUsers = await res.json();
+        const pendingDoctors = allUsers.filter(user => user.role === 'Doctor' && !user.isApproved);
+        
+        const approvalsLink = document.querySelector('a[href="approvals.html"]');
+        if (approvalsLink) {
+            let badge = approvalsLink.querySelector('.badge-count');
+            if (pendingDoctors.length > 0) {
+                if (!badge) {
+                    badge = document.createElement('span');
+                    badge.className = 'badge-count';
+                    badge.style.cssText = 'margin-left: auto; background-color: var(--accent-rose); color: #fff; font-size: 11px; font-weight: 700; padding: 2px 6px; border-radius: 10px; box-shadow: 0 2px 5px rgba(244, 63, 94, 0.4);';
+                    approvalsLink.appendChild(badge);
+                }
+                badge.textContent = pendingDoctors.length;
+                badge.style.display = 'inline-block';
+            } else if (badge) {
+                badge.style.display = 'none';
+            }
+        }
+    } catch (err) {
+        console.error("Error updating approvals badge:", err);
     }
 }
 
@@ -749,7 +924,7 @@ function renderAssessmentsTable(list) {
         list.forEach(item => {
             const tr = document.createElement('tr');
             const riskBadge = `<span class="badge ${item.riskLevel.toLowerCase()}">${item.riskLevel}</span>`;
-            const dateStr = item.assessmentDate.substring(0, 16);
+            const dateStr = formatDateTime(item.assessmentDate);
             
             tr.innerHTML = `
                 <td><strong>${item.animalName}</strong></td>
@@ -810,7 +985,7 @@ async function initAuditLogs() {
                     iconClass = 'fa-syringe';
                 }
                 
-                const timeStr = log.timestamp.substring(0, 16);
+                const timeStr = formatDateTime(log.timestamp);
                 
                 li.innerHTML = `
                     <div class="timeline-marker ${markerClass}">
@@ -864,7 +1039,7 @@ async function loadDoctorDashboard() {
             pendingAssessments.forEach(item => {
                 const tr = document.createElement('tr');
                 const riskBadge = `<span class="badge ${item.riskLevel.toLowerCase()}">${item.riskLevel}</span>`;
-                const dateStr = item.assessmentDate.substring(0, 16);
+                const dateStr = formatDateTime(item.assessmentDate);
                 
                 tr.innerHTML = `
                     <td><strong>${item.animalName}</strong></td>
@@ -913,6 +1088,47 @@ async function loadDoctorDashboard() {
             });
         } else {
             vacTbody.innerHTML = `<tr><td colspan="6" style="text-align:center;" class="text-secondary">No pending vaccine administrations in queue.</td></tr>`;
+        }
+
+        // Load Pending Appointments
+        const resApps = await fetch('/api/appointments');
+        const allApps = await resApps.json();
+        const pendingApps = allApps.filter(a => a.status === 'Pending');
+
+        const appsTbody = document.getElementById('doctor-appointments-awaiting-body');
+        if (appsTbody) {
+            appsTbody.innerHTML = '';
+            if (pendingApps.length > 0) {
+                pendingApps.forEach(item => {
+                    const tr = document.createElement('tr');
+                    const dateStr = formatDateTime(item.appointmentDate);
+                    tr.innerHTML = `
+                        <td>
+                            <strong>${item.animalName}</strong><br>
+                            <small class="text-secondary">${item.animalSpecies} | ${item.animalBreed || 'Unknown'}</small>
+                        </td>
+                        <td>
+                            <strong>${item.ownerName || 'Unknown'}</strong><br>
+                            <small class="text-secondary"><i class="fas fa-phone"></i> ${item.ownerContact || '—'}</small>
+                        </td>
+                        <td><small>${dateStr}</small></td>
+                        <td>${item.reason || 'Regular Checkup'}</td>
+                        <td>
+                            <div style="display: flex; gap: 6px;">
+                                <button class="btn-primary" onclick="updateAppointmentStatus(${item.appointmentId}, 'Scheduled')" style="padding: 4px 8px; font-size: 11px; border-radius: 6px; background: linear-gradient(135deg, var(--accent-emerald) 0%, #059669 100%);">
+                                    <i class="fas fa-check"></i> Accept
+                                </button>
+                                <button class="btn-danger" onclick="updateAppointmentStatus(${item.appointmentId}, 'Cancelled')" style="padding: 4px 8px; font-size: 11px; border-radius: 6px;">
+                                    <i class="fas fa-times"></i> Decline
+                                </button>
+                            </div>
+                        </td>
+                    `;
+                    appsTbody.appendChild(tr);
+                });
+            } else {
+                appsTbody.innerHTML = `<tr><td colspan="5" style="text-align:center;" class="text-secondary">No pending appointments awaiting acceptance.</td></tr>`;
+            }
         }
 
     } catch (err) {
@@ -1090,7 +1306,7 @@ async function loadAnimalMedicalHistory(animalId) {
 
                 let markerIcon = '<i class="fas fa-stethoscope"></i>';
                 
-                const dateStr = item.assessmentDate.substring(0, 16);
+                const dateStr = formatDateTime(item.assessmentDate);
                 
                 let overrideSection = '';
                 if (item.doctorDiagnosis) {
@@ -1189,4 +1405,381 @@ function openClinicalOverrideFromHistory(assessmentId) {
         showToast("Assessment details not found.", "error");
     }
 }
+
+// ==========================================
+// 6. APPOINTMENTS SYSTEM CONTROLLER
+// ==========================================
+async function initAppointments() {
+    const role = window.currentUser ? window.currentUser.role : 'User';
+    
+    // Hide all role sections first
+    document.querySelectorAll('.role-section').forEach(s => s.style.display = 'none');
+    
+    if (role === 'Admin') {
+        const adminSec = document.getElementById('admin-appointments-section');
+        if (adminSec) adminSec.style.display = 'block';
+        document.getElementById('appointments-title').textContent = 'Clinic Appointments Directory';
+        document.getElementById('appointments-subtitle').textContent = 'Global overview and administrative control of all scheduled clinical consultations.';
+        await loadAdminDirectory();
+    } else if (role === 'Doctor') {
+        const doctorSec = document.getElementById('doctor-appointments-section');
+        if (doctorSec) doctorSec.style.display = 'block';
+        document.getElementById('appointments-title').textContent = 'Doctor Consultation Queue';
+        document.getElementById('appointments-subtitle').textContent = 'Review your assigned scheduled appointments, check patient history, and update visit statuses.';
+        await loadDoctorQueue();
+    } else {
+        const userSec = document.getElementById('user-appointments-section');
+        if (userSec) userSec.style.display = 'block';
+        document.getElementById('appointments-title').textContent = 'Appointments Scheduler';
+        document.getElementById('appointments-subtitle').textContent = 'Book a new session with our certified veterinarians and review your upcoming visits.';
+        
+        await loadUserAnimalsDropdown();
+        await loadDoctorCardsGrid();
+        await loadUserAppointmentsList();
+        
+        const form = document.getElementById('appointment-form');
+        if (form) {
+            form.addEventListener('submit', handleBookAppointment);
+        }
+    }
+}
+
+// Helper: load user animals into select dropdown
+async function loadUserAnimalsDropdown() {
+    const select = document.getElementById('appointment-animal-select');
+    if (!select) return;
+    try {
+        const res = await fetch('/api/animals');
+        if (!res.ok) throw new Error("Failed to fetch animals");
+        const animals = await res.json();
+        
+        select.innerHTML = '<option value="">-- Choose Your Pet --</option>';
+        animals.forEach(a => {
+            select.innerHTML += `<option value="${a.animalId}">${a.name} (${a.species} - ${a.breed || 'Unknown'})</option>`;
+        });
+    } catch (err) {
+        showToast("Error loading pets dropdown: " + err.message, "error");
+    }
+}
+
+// Helper: load approved doctor cards
+async function loadDoctorCardsGrid() {
+    const grid = document.getElementById('doctor-cards-grid');
+    if (!grid) return;
+    try {
+        const res = await fetch('/api/appointments?action=getDoctors');
+        if (!res.ok) throw new Error("Failed to fetch approved doctors");
+        const doctors = await res.json();
+        
+        grid.innerHTML = '';
+        if (doctors.length > 0) {
+            doctors.forEach(doc => {
+                const card = document.createElement('div');
+                card.className = 'doctor-select-card';
+                card.onclick = () => selectDoctor(doc.userId, card);
+                
+                card.innerHTML = `
+                    <div class="doctor-card-avatar">
+                        <i class="fas fa-user-md"></i>
+                    </div>
+                    <div class="doctor-card-info">
+                        <h4>Dr. ${doc.fullName || doc.username}</h4>
+                        <p class="doctor-qualification"><i class="fas fa-graduation-cap"></i> ${doc.qualification || 'General Practice'}</p>
+                        <p class="doctor-experience"><i class="fas fa-briefcase"></i> ${doc.experience || 0} Years Experience</p>
+                        <p class="doctor-address"><i class="fas fa-location-dot"></i> ${doc.address || 'Clinic Branch'}</p>
+                        <p class="doctor-contact"><i class="fas fa-phone"></i> ${doc.phoneNo || '—'}</p>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        } else {
+            grid.innerHTML = `<div style="padding: 1.5rem; text-align:center;" class="text-secondary">No approved veterinarians currently available.</div>`;
+        }
+    } catch (err) {
+        showToast("Error loading doctors: " + err.message, "error");
+    }
+}
+
+// Global selector function for doctor card click
+function selectDoctor(doctorId, element) {
+    const input = document.getElementById('selected-doctor-id');
+    if (input) input.value = doctorId;
+    
+    document.querySelectorAll('.doctor-select-card').forEach(c => c.classList.remove('selected'));
+    element.classList.add('selected');
+}
+window.selectDoctor = selectDoctor;
+
+// Helper: load user's appointments list
+async function loadUserAppointmentsList() {
+    const tbody = document.getElementById('user-appointments-body');
+    if (!tbody) return;
+    try {
+        const res = await fetch('/api/appointments');
+        if (!res.ok) throw new Error("Failed to fetch appointments");
+        const appointments = await res.json();
+        
+        tbody.innerHTML = '';
+        if (appointments.length > 0) {
+            appointments.forEach(app => {
+                const tr = document.createElement('tr');
+                const statusClass = (app.status || 'Scheduled').toLowerCase();
+                const statusBadge = `<span class="badge ${statusClass}">${app.status || 'Scheduled'}</span>`;
+                const dateStr = formatDateTime(app.appointmentDate);
+                
+                let actionBtn = '—';
+                if (app.status === 'Scheduled' || app.status === 'Pending') {
+                    actionBtn = `
+                        <button class="btn-danger" onclick="updateAppointmentStatus(${app.appointmentId}, 'Cancelled')" style="padding: 4px 8px; font-size: 11px; border-radius: 6px;">
+                            <i class="fas fa-circle-xmark"></i> Cancel
+                        </button>
+                    `;
+                }
+                
+                tr.innerHTML = `
+                    <td><strong>${app.animalName}</strong></td>
+                    <td>Dr. ${app.doctorName || 'Veterinarian'}</td>
+                    <td><small>${dateStr}</small></td>
+                    <td>${app.reason || 'Regular Checkup'}</td>
+                    <td>${statusBadge}</td>
+                    <td>${actionBtn}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        } else {
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;" class="text-secondary">No scheduled appointments logged.</td></tr>`;
+        }
+    } catch (err) {
+        showToast("Error loading appointments: " + err.message, "error");
+    }
+}
+
+// Helper: handle user booking form submit
+async function handleBookAppointment(e) {
+    e.preventDefault();
+    const animalId = document.getElementById('appointment-animal-select').value;
+    const doctorId = document.getElementById('selected-doctor-id').value;
+    const appDate = document.getElementById('appointment-date').value;
+    const reason = document.getElementById('appointment-reason').value;
+    
+    if (!animalId) {
+        showToast("Please select one of your registered animals.", "warning");
+        return;
+    }
+    if (!doctorId) {
+        showToast("Please choose one of the approved veterinarians.", "warning");
+        return;
+    }
+    if (!appDate) {
+        showToast("Please specify the preferred appointment date.", "warning");
+        return;
+    }
+    
+    const payload = {
+        animalId: parseInt(animalId),
+        doctorId: parseInt(doctorId),
+        appointmentDate: appDate,
+        reason: reason
+    };
+    
+    try {
+        const res = await fetch('/api/appointments', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+            showToast(data.message, 'success');
+            document.getElementById('appointment-form').reset();
+            const docIdInput = document.getElementById('selected-doctor-id');
+            if (docIdInput) docIdInput.value = '';
+            document.querySelectorAll('.doctor-select-card').forEach(c => c.classList.remove('selected'));
+            await loadUserAppointmentsList();
+        } else {
+            showToast(data.message, 'error');
+        }
+    } catch (err) {
+        showToast("Booking failed: " + err.message, "error");
+    }
+}
+
+// Helper: load doctor queue list
+async function loadDoctorQueue() {
+    const tbody = document.getElementById('doctor-appointments-body');
+    if (!tbody) return;
+    try {
+        const res = await fetch('/api/appointments');
+        if (!res.ok) throw new Error("Failed to load consultation queue");
+        const appointments = await res.json();
+        
+        tbody.innerHTML = '';
+        if (appointments.length > 0) {
+            appointments.forEach(app => {
+                const tr = document.createElement('tr');
+                const statusClass = (app.status || 'Scheduled').toLowerCase();
+                const statusBadge = `<span class="badge ${statusClass}">${app.status || 'Scheduled'}</span>`;
+                const dateStr = formatDateTime(app.appointmentDate);
+                
+                let actions = '—';
+                if (app.status === 'Pending') {
+                    actions = `
+                        <div style="display: flex; gap: 6px;">
+                            <button class="btn-primary" onclick="updateAppointmentStatus(${app.appointmentId}, 'Scheduled')" style="padding: 4px 8px; font-size: 11px; border-radius: 6px; background: linear-gradient(135deg, var(--accent-emerald) 0%, #059669 100%);">
+                                <i class="fas fa-check"></i> Accept
+                            </button>
+                            <button class="btn-danger" onclick="updateAppointmentStatus(${app.appointmentId}, 'Cancelled')" style="padding: 4px 8px; font-size: 11px; border-radius: 6px;">
+                                <i class="fas fa-times"></i> Decline
+                            </button>
+                        </div>
+                    `;
+                } else if (app.status === 'Scheduled') {
+                    actions = `
+                        <div style="display: flex; gap: 6px;">
+                            <button class="btn-primary" onclick="updateAppointmentStatus(${app.appointmentId}, 'Completed')" style="padding: 4px 8px; font-size: 11px; border-radius: 6px; background: linear-gradient(135deg, var(--accent-emerald) 0%, #059669 100%);">
+                                <i class="fas fa-circle-check"></i> Complete
+                            </button>
+                            <button class="btn-danger" onclick="updateAppointmentStatus(${app.appointmentId}, 'Cancelled')" style="padding: 4px 8px; font-size: 11px; border-radius: 6px;">
+                                <i class="fas fa-circle-xmark"></i> Cancel
+                            </button>
+                        </div>
+                    `;
+                }
+                
+                tr.innerHTML = `
+                    <td>
+                        <strong>${app.animalName}</strong><br>
+                        <small class="text-secondary">${app.animalSpecies} | ${app.animalBreed || 'Unknown'}</small><br>
+                        <small class="text-muted">Age: ${app.animalAge || '—'} yrs | Wt: ${app.animalWeight || '—'} kg</small>
+                    </td>
+                    <td>
+                        <strong>${app.ownerName || 'Unknown'}</strong><br>
+                        <small class="text-secondary"><i class="fas fa-phone"></i> ${app.ownerContact || '—'}</small>
+                    </td>
+                    <td><small>${dateStr}</small></td>
+                    <td>${app.reason || 'Regular Checkup'}</td>
+                    <td>${statusBadge}</td>
+                    <td>${actions}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        } else {
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;" class="text-secondary">No assigned appointments in queue.</td></tr>`;
+        }
+    } catch (err) {
+        showToast("Error loading consultation queue: " + err.message, "error");
+    }
+}
+
+// Helper: load admin global appointments directory
+async function loadAdminDirectory() {
+    const tbody = document.getElementById('admin-appointments-body');
+    if (!tbody) return;
+    try {
+        const res = await fetch('/api/appointments');
+        if (!res.ok) throw new Error("Failed to load appointments registry");
+        const appointments = await res.json();
+        
+        tbody.innerHTML = '';
+        if (appointments.length > 0) {
+            appointments.forEach(app => {
+                const tr = document.createElement('tr');
+                const statusClass = (app.status || 'Scheduled').toLowerCase();
+                const statusBadge = `<span class="badge ${statusClass}">${app.status || 'Scheduled'}</span>`;
+                const dateStr = formatDateTime(app.appointmentDate);
+                
+                let actions = '—';
+                if (app.status === 'Pending') {
+                    actions = `
+                        <div style="display: flex; gap: 6px;">
+                            <button class="btn-primary" onclick="updateAppointmentStatus(${app.appointmentId}, 'Scheduled')" style="padding: 4px 8px; font-size: 11px; border-radius: 6px; background: linear-gradient(135deg, var(--accent-emerald) 0%, #059669 100%);" title="Accept">
+                                <i class="fas fa-check"></i>
+                            </button>
+                            <button class="btn-danger" onclick="updateAppointmentStatus(${app.appointmentId}, 'Cancelled')" style="padding: 4px 8px; font-size: 11px; border-radius: 6px;" title="Decline">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    `;
+                } else if (app.status === 'Scheduled') {
+                    actions = `
+                        <div style="display: flex; gap: 6px;">
+                            <button class="btn-primary" onclick="updateAppointmentStatus(${app.appointmentId}, 'Completed')" style="padding: 4px 8px; font-size: 11px; border-radius: 6px; background: linear-gradient(135deg, var(--accent-emerald) 0%, #059669 100%);" title="Complete">
+                                <i class="fas fa-check-double"></i>
+                            </button>
+                            <button class="btn-danger" onclick="updateAppointmentStatus(${app.appointmentId}, 'Cancelled')" style="padding: 4px 8px; font-size: 11px; border-radius: 6px;" title="Cancel">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    `;
+                }
+                
+                tr.innerHTML = `
+                    <td>
+                        <strong>${app.animalName}</strong><br>
+                        <small class="text-secondary">${app.animalSpecies} | ${app.animalBreed || 'Unknown'}</small>
+                    </td>
+                    <td>
+                        <strong>${app.ownerName || 'Unknown'}</strong><br>
+                        <small class="text-secondary"><i class="fas fa-phone"></i> ${app.ownerContact || '—'}</small>
+                    </td>
+                    <td>Dr. ${app.doctorName || 'Veterinarian'}</td>
+                    <td><small>${dateStr}</small></td>
+                    <td>${app.reason || 'Regular Checkup'}</td>
+                    <td>${statusBadge}</td>
+                    <td>${actions}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        } else {
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;" class="text-secondary">No appointments recorded.</td></tr>`;
+        }
+    } catch (err) {
+        showToast("Error loading appointments registry: " + err.message, "error");
+    }
+}
+
+// Global action dispatcher for completing/cancelling appointments
+async function updateAppointmentStatus(appointmentId, status) {
+    if (status === 'Cancelled' && !confirm("Are you sure you want to cancel this appointment?")) {
+        return;
+    }
+    
+    const payload = {
+        appointmentId: appointmentId,
+        status: status
+    };
+    
+    try {
+        const res = await fetch('/api/appointments', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+            showToast(data.message, 'success');
+            // Refresh based on active page
+            if (window.location.pathname.endsWith('doctor_dashboard.html')) {
+                await loadDoctorDashboard();
+            } else {
+                const role = window.currentUser ? window.currentUser.role : 'User';
+                if (role === 'Admin') {
+                    await loadAdminDirectory();
+                } else if (role === 'Doctor') {
+                    await loadDoctorQueue();
+                } else {
+                    await loadUserAppointmentsList();
+                }
+            }
+        } else {
+            showToast(data.message, 'error');
+        }
+    } catch (err) {
+        showToast("Failed to update status: " + err.message, "error");
+    }
+}
+window.updateAppointmentStatus = updateAppointmentStatus;
+
 

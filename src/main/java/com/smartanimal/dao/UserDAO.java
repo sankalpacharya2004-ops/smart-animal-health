@@ -30,7 +30,7 @@ public class UserDAO {
     }
 
     public boolean registerUser(User user) {
-        String sql = "INSERT INTO users (username, password_hash, full_name, email, role) VALUES (?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO users (username, password_hash, full_name, email, role, qualification, address, experience, phone_no, certificate, is_approved) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             
@@ -39,6 +39,12 @@ public class UserDAO {
             stmt.setString(3, user.getFullName());
             stmt.setString(4, user.getEmail());
             stmt.setString(5, user.getRole() != null ? user.getRole() : "User");
+            stmt.setString(6, user.getQualification());
+            stmt.setString(7, user.getAddress());
+            stmt.setInt(8, user.getExperience());
+            stmt.setString(9, user.getPhoneNo());
+            stmt.setString(10, user.getCertificate());
+            stmt.setBoolean(11, user.isApproved());
             
             int rowsAffected = stmt.executeUpdate();
             if (rowsAffected > 0) {
@@ -65,7 +71,7 @@ public class UserDAO {
             
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
-                    return new User(
+                    User u = new User(
                         rs.getInt("user_id"),
                         rs.getString("username"),
                         null, // Do not expose password hash in session object
@@ -74,6 +80,13 @@ public class UserDAO {
                         rs.getString("role"),
                         rs.getTimestamp("created_date")
                     );
+                    u.setQualification(rs.getString("qualification"));
+                    u.setAddress(rs.getString("address"));
+                    u.setExperience(rs.getInt("experience"));
+                    u.setPhoneNo(rs.getString("phone_no"));
+                    u.setCertificate(rs.getString("certificate"));
+                    u.setApproved(rs.getBoolean("is_approved"));
+                    return u;
                 }
             }
         } catch (SQLException e) {
@@ -105,7 +118,7 @@ public class UserDAO {
             stmt.setInt(1, userId);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
-                    return new User(
+                    User u = new User(
                         rs.getInt("user_id"),
                         rs.getString("username"),
                         null,
@@ -114,6 +127,13 @@ public class UserDAO {
                         rs.getString("role"),
                         rs.getTimestamp("created_date")
                     );
+                    u.setQualification(rs.getString("qualification"));
+                    u.setAddress(rs.getString("address"));
+                    u.setExperience(rs.getInt("experience"));
+                    u.setPhoneNo(rs.getString("phone_no"));
+                    u.setCertificate(rs.getString("certificate"));
+                    u.setApproved(rs.getBoolean("is_approved"));
+                    return u;
                 }
             }
         } catch (SQLException e) {
@@ -124,12 +144,12 @@ public class UserDAO {
 
     public List<User> getAllUsers() {
         List<User> list = new ArrayList<>();
-        String sql = "SELECT user_id, username, full_name, email, role, created_date FROM users ORDER BY username ASC";
+        String sql = "SELECT * FROM users ORDER BY username ASC";
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql);
              ResultSet rs = stmt.executeQuery()) {
             while (rs.next()) {
-                list.add(new User(
+                User u = new User(
                     rs.getInt("user_id"),
                     rs.getString("username"),
                     null, // Do not expose password hash
@@ -137,7 +157,14 @@ public class UserDAO {
                     rs.getString("email"),
                     rs.getString("role"),
                     rs.getTimestamp("created_date")
-                ));
+                );
+                u.setQualification(rs.getString("qualification"));
+                u.setAddress(rs.getString("address"));
+                u.setExperience(rs.getInt("experience"));
+                u.setPhoneNo(rs.getString("phone_no"));
+                u.setCertificate(rs.getString("certificate"));
+                u.setApproved(rs.getBoolean("is_approved"));
+                list.add(u);
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -168,5 +195,48 @@ public class UserDAO {
             e.printStackTrace();
         }
         return false;
+    }
+
+    public boolean updateUserApproval(int userId, boolean isApproved) {
+        String sql = "UPDATE users SET is_approved = ? WHERE user_id = ?";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setBoolean(1, isApproved);
+            stmt.setInt(2, userId);
+            return stmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public List<User> getApprovedDoctors() {
+        List<User> list = new ArrayList<>();
+        String sql = "SELECT * FROM users WHERE role = 'Doctor' AND is_approved = 1 ORDER BY full_name ASC";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
+                User u = new User(
+                    rs.getInt("user_id"),
+                    rs.getString("username"),
+                    null,
+                    rs.getString("full_name"),
+                    rs.getString("email"),
+                    rs.getString("role"),
+                    rs.getTimestamp("created_date")
+                );
+                u.setQualification(rs.getString("qualification"));
+                u.setAddress(rs.getString("address"));
+                u.setExperience(rs.getInt("experience"));
+                u.setPhoneNo(rs.getString("phone_no"));
+                u.setCertificate(rs.getString("certificate"));
+                u.setApproved(rs.getBoolean("is_approved"));
+                list.add(u);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return list;
     }
 }

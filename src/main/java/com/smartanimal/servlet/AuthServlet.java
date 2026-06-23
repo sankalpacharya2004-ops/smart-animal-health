@@ -64,6 +64,12 @@ public class AuthServlet extends HttpServlet {
             body.addProperty("password", request.getParameter("password"));
             body.addProperty("fullName", request.getParameter("fullName"));
             body.addProperty("email", request.getParameter("email"));
+            body.addProperty("role", request.getParameter("role"));
+            body.addProperty("qualification", request.getParameter("qualification"));
+            body.addProperty("address", request.getParameter("address"));
+            body.addProperty("experience", request.getParameter("experience"));
+            body.addProperty("phoneNo", request.getParameter("phoneNo"));
+            body.addProperty("certificate", request.getParameter("certificate"));
             handleAction(action, body, request, response, jsonResponse);
         } else {
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
@@ -84,11 +90,16 @@ public class AuthServlet extends HttpServlet {
             } else {
                 User user = userDAO.validateUser(username, password);
                 if (user != null) {
-                    HttpSession session = request.getSession(true);
-                    session.setAttribute("user", user);
-                    jsonResponse.addProperty("success", true);
-                    jsonResponse.addProperty("message", "Login successful!");
-                    jsonResponse.add("user", gson.toJsonTree(user));
+                    if ("Doctor".equalsIgnoreCase(user.getRole()) && !user.isApproved()) {
+                        jsonResponse.addProperty("success", false);
+                        jsonResponse.addProperty("message", "Your account is yet to be approved by the Admin.");
+                    } else {
+                        HttpSession session = request.getSession(true);
+                        session.setAttribute("user", user);
+                        jsonResponse.addProperty("success", true);
+                        jsonResponse.addProperty("message", "Login successful!");
+                        jsonResponse.add("user", gson.toJsonTree(user));
+                    }
                 } else {
                     jsonResponse.addProperty("success", false);
                     jsonResponse.addProperty("message", "Invalid username or password.");
@@ -96,10 +107,11 @@ public class AuthServlet extends HttpServlet {
             }
         } 
         else if ("signup".equalsIgnoreCase(action)) {
-            String username = data.has("username") ? data.get("username").getAsString() : null;
-            String password = data.has("password") ? data.get("password").getAsString() : null;
-            String fullName = data.has("fullName") ? data.get("fullName").getAsString() : null;
-            String email = data.has("email") ? data.get("email").getAsString() : null;
+            String username = data.has("username") && !data.get("username").isJsonNull() ? data.get("username").getAsString() : null;
+            String password = data.has("password") && !data.get("password").isJsonNull() ? data.get("password").getAsString() : null;
+            String fullName = data.has("fullName") && !data.get("fullName").isJsonNull() ? data.get("fullName").getAsString() : null;
+            String email = data.has("email") && !data.get("email").isJsonNull() ? data.get("email").getAsString() : null;
+            String role = data.has("role") && !data.get("role").isJsonNull() ? data.get("role").getAsString() : "User";
 
             if (username == null || password == null || username.trim().isEmpty() || password.trim().isEmpty()) {
                 jsonResponse.addProperty("success", false);
@@ -113,14 +125,41 @@ public class AuthServlet extends HttpServlet {
                 user.setPasswordHash(password); // Hashed inside UserDAO.registerUser
                 user.setFullName(fullName);
                 user.setEmail(email);
-                user.setRole("User"); // Default registration role
+                user.setRole(role);
+                
+                if ("Doctor".equalsIgnoreCase(role)) {
+                    String qual = data.has("qualification") && !data.get("qualification").isJsonNull() ? data.get("qualification").getAsString() : null;
+                    String addr = data.has("address") && !data.get("address").isJsonNull() ? data.get("address").getAsString() : null;
+                    int exp = 0;
+                    if (data.has("experience") && !data.get("experience").isJsonNull()) {
+                        try {
+                            exp = Integer.parseInt(data.get("experience").getAsString());
+                        } catch (Exception e) {}
+                    }
+                    String phone = data.has("phoneNo") && !data.get("phoneNo").isJsonNull() ? data.get("phoneNo").getAsString() : null;
+                    String cert = data.has("certificate") && !data.get("certificate").isJsonNull() ? data.get("certificate").getAsString() : null;
+                    
+                    user.setQualification(qual);
+                    user.setAddress(addr);
+                    user.setExperience(exp);
+                    user.setPhoneNo(phone);
+                    user.setCertificate(cert);
+                    user.setApproved(false); // Doctor registration requests require Admin approval
+                } else {
+                    user.setApproved(true); // Regular users are approved automatically
+                }
 
                 if (userDAO.registerUser(user)) {
-                    HttpSession session = request.getSession(true);
-                    session.setAttribute("user", user);
                     jsonResponse.addProperty("success", true);
-                    jsonResponse.addProperty("message", "Registration successful!");
-                    jsonResponse.add("user", gson.toJsonTree(user));
+                    if ("Doctor".equalsIgnoreCase(role)) {
+                        jsonResponse.addProperty("message", "Registration request submitted. Pending administrator approval!");
+                    } else {
+                        HttpSession session = request.getSession(true);
+                        session.setAttribute("user", user);
+                        jsonResponse.addProperty("success", true);
+                        jsonResponse.addProperty("message", "Registration successful!");
+                        jsonResponse.add("user", gson.toJsonTree(user));
+                    }
                 } else {
                     jsonResponse.addProperty("success", false);
                     jsonResponse.addProperty("message", "Registration failed due to server error.");

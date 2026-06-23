@@ -58,6 +58,48 @@ public class AnimalDAO {
         return animals;
     }
 
+    public List<Animal> getAnimalsByDoctorId(int doctorId) {
+        List<Animal> animals = new ArrayList<>();
+        String sql = "SELECT DISTINCT an.* FROM animals an " +
+                     "LEFT JOIN appointments ap ON an.animal_id = ap.animal_id " +
+                     "LEFT JOIN health_assessments ha ON an.animal_id = ha.animal_id " +
+                     "WHERE ap.doctor_id = ? OR ha.doctor_id = ? " +
+                     "ORDER BY an.registration_date DESC";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, doctorId);
+            stmt.setInt(2, doctorId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    animals.add(extractAnimal(rs));
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return animals;
+    }
+
+    public boolean isAnimalUnderDoctor(int animalId, int doctorId) {
+        String sql = "SELECT 1 FROM animals an " +
+                     "LEFT JOIN appointments ap ON an.animal_id = ap.animal_id " +
+                     "LEFT JOIN health_assessments ha ON an.animal_id = ha.animal_id " +
+                     "WHERE an.animal_id = ? AND (ap.doctor_id = ? OR ha.doctor_id = ?) " +
+                     "LIMIT 1";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, animalId);
+            stmt.setInt(2, doctorId);
+            stmt.setInt(3, doctorId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
     public Animal getAnimalById(int animalId) {
         String sql = "SELECT * FROM animals WHERE animal_id = ?";
         try (Connection conn = DBConnection.getConnection();

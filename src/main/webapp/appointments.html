@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Animal Health - Appointments</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Scoped styles for Doctor Selection Cards */
+        .doctor-cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 1rem;
+            margin-top: 0.5rem;
+            max-height: 320px;
+            overflow-y: auto;
+            padding-right: 0.5rem;
+            border: 1px solid var(--panel-border);
+            border-radius: 8px;
+            padding: 0.75rem;
+            background: rgba(0, 0, 0, 0.15);
+        }
+
+        .doctor-select-card {
+            padding: 1rem;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            position: relative;
+            border: 1px solid var(--panel-border);
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+            background: rgba(15, 23, 42, 0.4);
+        }
+
+        .doctor-select-card:hover {
+            border-color: rgba(6, 182, 212, 0.4);
+            background: rgba(255, 255, 255, 0.02);
+            transform: translateY(-2px);
+        }
+
+        .doctor-select-card.selected {
+            border-color: var(--accent-cyan);
+            background: rgba(6, 182, 212, 0.08);
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.15);
+        }
+
+        .doctor-card-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: var(--accent-cyan);
+            flex-shrink: 0;
+            transition: var(--transition-smooth);
+        }
+
+        .doctor-select-card.selected .doctor-card-avatar {
+            background: var(--accent-cyan);
+            color: #090d16;
+        }
+
+        .doctor-card-info {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .doctor-card-info h4 {
+            font-family: var(--font-heading);
+            font-size: 15px;
+            font-weight: 600;
+            color: #fff;
+            margin: 0;
+        }
+
+        .doctor-card-info p {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .doctor-card-info p i {
+            width: 14px;
+            text-align: center;
+            color: var(--text-muted);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Ambient glowing backgrounds -->
+    <div class="ambient-glow glow-top-left"></div>
+    <div class="ambient-glow glow-bottom-right"></div>
+
+    <div class="app-container">
+        
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar glass-panel" style="border-radius: 0; border: none; border-right: 1px solid var(--panel-border);">
+            <div class="brand-section">
+                <div class="brand-logo">
+                    <i class="fas fa-heart-pulse"></i>
+                </div>
+                <span class="brand-title">Animal Health</span>
+            </div>
+
+            <nav>
+                <ul class="nav-menu">
+                    <li>
+                        <a href="dashboard.html" class="nav-link">
+                            <i class="fas fa-chart-pie"></i>
+                            <span>Dashboard</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="animals.html" class="nav-link">
+                            <i class="fas fa-paw"></i>
+                            <span>Animals Registry</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="symptoms.html" class="nav-link">
+                            <i class="fas fa-stethoscope"></i>
+                            <span>Log Symptoms</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="vaccinations.html" class="nav-link">
+                            <i class="fas fa-syringe"></i>
+                            <span>Vaccinations</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="appointments.html" class="nav-link active">
+                            <i class="fas fa-calendar-check"></i>
+                            <span>Appointments</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="medical_history.html" class="nav-link">
+                            <i class="fas fa-file-medical"></i>
+                            <span>Medical History</span>
+                        </a>
+                    </li>
+                    <li class="doctor-only" style="display: none;">
+                        <a href="doctor_dashboard.html" class="nav-link">
+                            <i class="fas fa-user-md"></i>
+                            <span>Doctor Dashboard</span>
+                        </a>
+                    </li>
+                    <li class="admin-only" style="display: none;">
+                        <a href="caretakers.html" class="nav-link">
+                            <i class="fas fa-users-cog"></i>
+                            <span>Caretakers</span>
+                        </a>
+                    </li>
+                    <li class="admin-only" style="display: none;">
+                        <a href="approvals.html" class="nav-link">
+                            <i class="fas fa-user-check"></i>
+                            <span>Doctor Approvals</span>
+                        </a>
+                    </li>
+                    <li class="admin-only" style="display: none;">
+                        <a href="assessments.html" class="nav-link">
+                            <i class="fas fa-notes-medical"></i>
+                            <span>Health Assessments</span>
+                        </a>
+                    </li>
+                    <li class="admin-only" style="display: none;">
+                        <a href="audit_logs.html" class="nav-link">
+                            <i class="fas fa-clipboard-list"></i>
+                            <span>Audit Logs</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+
+            <div class="user-profile-section">
+                <div class="user-info">
+                    <div id="sidebar-user-avatar" class="user-avatar">U</div>
+                    <div class="user-details">
+                        <span id="sidebar-user-name" class="user-name">Loading...</span>
+                        <span id="sidebar-user-role" class="user-role">User</span>
+                    </div>
+                </div>
+                <button onclick="logout()" class="btn-secondary" style="width: 100%; justify-content: center; padding: 8px;">
+                    <i class="fas fa-right-from-bracket"></i> Sign Out
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Workspace -->
+        <main class="main-content">
+            <header class="header-container">
+                <div>
+                    <h1 class="page-title" id="appointments-title">Appointments</h1>
+                    <p class="page-subtitle" id="appointments-subtitle">Manage medical consultations, animal diagnostics, and vet schedules.</p>
+                </div>
+            </header>
+
+            <!-- User Mode Layout -->
+            <div id="user-appointments-section" class="role-section" style="display: none; margin-top: 1rem;">
+                <div class="dashboard-grid">
+                    <!-- Booking Form Panel -->
+                    <div class="glass-panel" style="padding: 1.5rem; height: fit-content;">
+                        <div style="margin-bottom: 1.2rem; padding-bottom: 0.8rem; border-bottom: 1px solid var(--panel-border);">
+                            <h2 class="panel-title">
+                                <i class="fas fa-calendar-plus" style="color: var(--accent-cyan);"></i> Book an Appointment
+                            </h2>
+                        </div>
+                        <form id="appointment-form">
+                            <input type="hidden" id="selected-doctor-id" value="">
+                            
+                            <div class="form-group" style="margin-bottom: 1.2rem;">
+                                <label for="appointment-animal-select">Select Your Pet *</label>
+                                <select id="appointment-animal-select" required style="width: 100%;">
+                                    <option value="">Loading your pets...</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group" style="margin-bottom: 1.2rem;">
+                                <label style="margin-bottom: 0.5rem; display: block;">Select a Veterinarian *</label>
+                                <div id="doctor-cards-grid" class="doctor-cards-grid">
+                                    <div class="text-secondary" style="padding: 1rem; text-align: center; width: 100%;">
+                                        <i class="fas fa-spinner fa-spin"></i> Loading veterinarians...
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group" style="margin-bottom: 1.2rem;">
+                                <label for="appointment-date">Preferred Date &amp; Time *</label>
+                                <input type="datetime-local" id="appointment-date" required style="width: 100%;">
+                            </div>
+
+                            <div class="form-group" style="margin-bottom: 1.5rem;">
+                                <label for="appointment-reason">Reason for Visit / Symptoms</label>
+                                <textarea id="appointment-reason" rows="3" placeholder="e.g. Annual checkup, low energy, vomiting" style="width: 100%;"></textarea>
+                            </div>
+
+                            <button type="submit" class="btn-primary" style="width: 100%; justify-content: center;">
+                                <i class="fas fa-calendar-check"></i> Book Appointment
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- My Appointments History Panel -->
+                    <div class="glass-panel" style="display: flex; flex-direction: column;">
+                        <div class="panel-header" style="border-bottom: 1px solid var(--panel-border);">
+                            <h2 class="panel-title">
+                                <i class="fas fa-history" style="color: var(--accent-emerald);"></i> My Appointments
+                            </h2>
+                        </div>
+                        <div class="table-container" style="flex-grow: 1; padding-top: 1rem;">
+                            <table class="custom-table">
+                                <thead>
+                                    <tr>
+                                        <th>Pet</th>
+                                        <th>Veterinarian</th>
+                                        <th>Date &amp; Time</th>
+                                        <th>Reason</th>
+                                        <th>Status</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="user-appointments-body">
+                                    <tr><td colspan="6" style="text-align:center;" class="text-secondary"><i class="fas fa-spinner fa-spin"></i> Loading appointments...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Doctor Mode Layout -->
+            <div id="doctor-appointments-section" class="role-section" style="display: none; margin-top: 1rem;">
+                <div class="glass-panel" style="display: flex; flex-direction: column; border-color: rgba(6, 182, 212, 0.2);">
+                    <div class="panel-header" style="border-bottom: 1px solid var(--panel-border);">
+                        <h2 class="panel-title">
+                            <i class="fas fa-notes-medical" style="color: var(--accent-cyan); margin-right: 8px;"></i> Consultation Queue
+                        </h2>
+                    </div>
+                    <div class="table-container" style="padding-top: 0.5rem;">
+                        <table class="custom-table">
+                            <thead>
+                                <tr>
+                                    <th>Patient (Pet Profile)</th>
+                                    <th>Caretaker (Owner)</th>
+                                    <th>Date &amp; Time</th>
+                                    <th>Reason / Symptoms</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="doctor-appointments-body">
+                                <tr><td colspan="6" style="text-align:center;" class="text-secondary"><i class="fas fa-spinner fa-spin"></i> Loading consultation queue...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Admin Mode Layout -->
+            <div id="admin-appointments-section" class="role-section" style="display: none; margin-top: 1rem;">
+                <div class="glass-panel" style="display: flex; flex-direction: column; border-color: rgba(244, 63, 94, 0.2);">
+                    <div class="panel-header" style="border-bottom: 1px solid var(--panel-border);">
+                        <h2 class="panel-title">
+                            <i class="fas fa-hospital-user" style="color: var(--accent-rose); margin-right: 8px;"></i> Clinic Appointments Registry
+                        </h2>
+                    </div>
+                    <div class="table-container" style="padding-top: 0.5rem;">
+                        <table class="custom-table">
+                            <thead>
+                                <tr>
+                                    <th>Patient Info</th>
+                                    <th>Caretaker</th>
+                                    <th>Assigned Doctor</th>
+                                    <th>Date &amp; Time</th>
+                                    <th>Reason</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-appointments-body">
+                                <tr><td colspan="7" style="text-align:center;" class="text-secondary"><i class="fas fa-spinner fa-spin"></i> Loading appointments directory...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Toast container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Scripts -->
+    <script src="js/auth.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>

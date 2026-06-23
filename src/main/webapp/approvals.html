@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart Animal Health - Animals Registry</title>
+    <title>Smart Animal Health - Doctor Approvals</title>
     <link rel="stylesheet" href="css/styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
@@ -33,7 +33,7 @@
                         </a>
                     </li>
                     <li>
-                        <a href="animals.html" class="nav-link active">
+                        <a href="animals.html" class="nav-link">
                             <i class="fas fa-paw"></i>
                             <span>Animals Registry</span>
                         </a>
@@ -75,7 +75,7 @@
                         </a>
                     </li>
                     <li class="admin-only" style="display: none;">
-                        <a href="approvals.html" class="nav-link">
+                        <a href="approvals.html" class="nav-link active">
                             <i class="fas fa-user-check"></i>
                             <span>Doctor Approvals</span>
                         </a>
@@ -113,98 +113,47 @@
         <main class="main-content">
             <header class="header-container">
                 <div>
-                    <h1 class="page-title">Animals Registry</h1>
-                    <p class="page-subtitle">Add new animal profiles, manage owner details, and check records.</p>
-                </div>
-                <div>
-                    <button id="btn-add-animal" class="btn-primary">
-                        <i class="fas fa-plus"></i> Register Animal
-                    </button>
+                    <h1 class="page-title">Doctor Registrations</h1>
+                    <p class="page-subtitle">Verify qualifications, certificates, and clinic details of veterinarians requesting portal access.</p>
                 </div>
             </header>
 
-            <!-- Search bar -->
-            <div class="glass-panel" style="padding: 0.8rem 1.2rem; margin-bottom: 1.5rem; display: flex; gap: 1rem; align-items: center; border-radius: 12px;">
-                <i class="fas fa-magnifying-glass" style="color: var(--accent-cyan); font-size: 1.1rem;"></i>
-                <input type="text" id="search-animals" placeholder="Search by name, species, breed, owner or type..." style="flex-grow: 1; border: none; background: transparent; color: #fff; font-size: 15px; outline: none;">
-            </div>
-
-            <!-- Dynamic grid listing of animal cards -->
-            <section id="animals-grid" class="animal-list-grid">
-                <div style="grid-column: 1/-1; text-align:center; padding: 3rem;" class="glass-panel text-secondary">
-                    <i class="fas fa-spinner fa-spin" style="font-size: 30px; margin-bottom: 1rem;"></i>
-                    <p>Loading animal profiles...</p>
+            <!-- Pending Doctor Approvals Queue -->
+            <div class="glass-panel" style="display: flex; flex-direction: column; margin-top: 1rem; border-color: rgba(6, 182, 212, 0.2);">
+                <div class="panel-header" style="border-bottom: 1px solid var(--panel-border);">
+                    <h2 class="panel-title">
+                        <i class="fas fa-user-clock" style="color: var(--accent-cyan); margin-right: 8px;"></i> Registration Requests
+                    </h2>
                 </div>
-            </section>
+                <div class="table-container" style="padding-top: 0.5rem;">
+                    <table class="custom-table" id="approvals-table">
+                        <thead>
+                            <tr>
+                                <th>Doctor Info</th>
+                                <th>Qualification</th>
+                                <th>Experience</th>
+                                <th>Clinic Address</th>
+                                <th>Contact Details</th>
+                                <th>License / Certificate</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="approvals-table-body">
+                            <tr><td colspan="7" style="text-align:center;" class="text-secondary"><i class="fas fa-spinner fa-spin"></i> Loading requests...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div id="approvals-empty-state" style="display: none; padding: 3rem; text-align: center; flex-direction: column; align-items: center; gap: 1rem;">
+                    <i class="fas fa-circle-check" style="font-size: 48px; color: var(--accent-emerald);"></i>
+                    <h3 style="font-family: var(--font-heading); font-size: 20px;">All Requests Processed</h3>
+                    <p class="text-secondary" style="font-size: 14px; max-width: 400px; margin: 0 auto;">There are no pending doctor registration requests at the moment. Active medical accounts can be demoted or deactivated from the Caretakers tab.</p>
+                </div>
+            </div>
         </main>
     </div>
 
-    <!-- Register/Modify Modal -->
-    <div id="animal-modal" class="modal-overlay">
-        <div class="glass-panel modal-container">
-            <div class="modal-header">
-                <h2 id="modal-title-text" class="modal-title">Register New Animal</h2>
-                <button id="modal-close-btn" class="modal-close">&times;</button>
-            </div>
-            <form id="animal-form">
-                <!-- Hidden inputs -->
-                <input type="hidden" id="animal-id-input" value="0">
-                
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label for="animal-name">Animal Name *</label>
-                        <input type="text" id="animal-name" required placeholder="e.g. Buddy">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="animal-type">Classification *</label>
-                        <select id="animal-type" required>
-                            <option value="pet">Pet (Dog, Cat, etc.)</option>
-                            <option value="farm">Farm Animal (Cow, Sheep, etc.)</option>
-                            <option value="stray">Stray / Rescue</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="animal-species">Species *</label>
-                        <input type="text" id="animal-species" required placeholder="e.g. Dog">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="animal-breed">Breed / Subspecies</label>
-                        <input type="text" id="animal-breed" placeholder="e.g. Golden Retriever">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="animal-age">Age (years)</label>
-                        <input type="number" id="animal-age" min="0" max="100" placeholder="e.g. 3">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="animal-weight">Weight (kg)</label>
-                        <input type="number" id="animal-weight" min="0" step="0.01" placeholder="e.g. 30.5">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="animal-owner">Caretaker / Owner Name</label>
-                        <input type="text" id="animal-owner" placeholder="Name of owner">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="animal-contact">Contact Number</label>
-                        <input type="tel" id="animal-contact" placeholder="Phone number">
-                    </div>
-                </div>
-
-                <div class="modal-footer">
-                    <button type="button" id="btn-cancel-modal" class="btn-secondary">Cancel</button>
-                    <button type="submit" class="btn-primary">Save Profile</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
     <!-- Scripts -->
+    <div id="toast-container" class="toast-container"></div>
     <script src="js/auth.js"></script>
     <script src="js/main.js"></script>
 </body>

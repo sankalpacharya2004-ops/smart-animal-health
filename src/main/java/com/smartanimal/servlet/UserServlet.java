@@ -71,7 +71,37 @@ public class UserServlet extends HttpServlet {
         JsonObject body = gson.fromJson(reader, JsonObject.class);
         JsonObject jsonResponse = new JsonObject();
 
-        if (body == null || !body.has("userId") || !body.has("role")) {
+        if (body == null) {
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            jsonResponse.addProperty("success", false);
+            jsonResponse.addProperty("message", "Request body is empty.");
+            response.getWriter().write(gson.toJson(jsonResponse));
+            return;
+        }
+
+        if (body.has("isApproved")) {
+            if (!body.has("userId")) {
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                jsonResponse.addProperty("success", false);
+                jsonResponse.addProperty("message", "Missing required field: userId.");
+                response.getWriter().write(gson.toJson(jsonResponse));
+                return;
+            }
+            int targetUserId = body.get("userId").getAsInt();
+            boolean approve = body.get("isApproved").getAsBoolean();
+            if (userDAO.updateUserApproval(targetUserId, approve)) {
+                jsonResponse.addProperty("success", true);
+                jsonResponse.addProperty("message", approve ? "Doctor approved successfully!" : "Doctor approval status updated.");
+            } else {
+                response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                jsonResponse.addProperty("success", false);
+                jsonResponse.addProperty("message", "Database error updating doctor approval.");
+            }
+            response.getWriter().write(gson.toJson(jsonResponse));
+            return;
+        }
+
+        if (!body.has("userId") || !body.has("role")) {
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             jsonResponse.addProperty("success", false);
             jsonResponse.addProperty("message", "Missing required fields: userId, role.");

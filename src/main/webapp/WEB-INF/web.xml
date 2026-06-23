@@ -98,6 +98,15 @@
         <url-pattern>/api/dashboard</url-pattern>
     </servlet-mapping>
 
+    <servlet>
+        <servlet-name>AppointmentServlet</servlet-name>
+        <servlet-class>com.smartanimal.servlet.AppointmentServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>AppointmentServlet</servlet-name>
+        <url-pattern>/api/appointments</url-pattern>
+    </servlet-mapping>
+
     <welcome-file-list>
         <welcome-file>index.html</welcome-file>
     </welcome-file-list>

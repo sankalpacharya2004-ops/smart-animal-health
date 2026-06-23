@@ -51,6 +51,12 @@
                         </a>
                     </li>
                     <li>
+                        <a href="appointments.html" class="nav-link">
+                            <i class="fas fa-calendar-check"></i>
+                            <span>Appointments</span>
+                        </a>
+                    </li>
+                    <li>
                         <a href="medical_history.html" class="nav-link">
                             <i class="fas fa-file-medical"></i>
                             <span>Medical History</span>
@@ -66,6 +72,12 @@
                         <a href="caretakers.html" class="nav-link">
                             <i class="fas fa-users-cog"></i>
                             <span>Caretakers</span>
+                        </a>
+                    </li>
+                    <li class="admin-only" style="display: none;">
+                        <a href="approvals.html" class="nav-link">
+                            <i class="fas fa-user-check"></i>
+                            <span>Doctor Approvals</span>
                         </a>
                     </li>
                     <li class="admin-only" style="display: none;">
@@ -163,6 +175,31 @@
                             </thead>
                             <tbody id="doctor-pending-table-body">
                                 <tr><td colspan="6" style="text-align:center;" class="text-secondary"><i class="fas fa-spinner fa-spin"></i> Loading pending cases...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Appointments Awaiting Acceptance -->
+                <div class="glass-panel" style="display: flex; flex-direction: column; margin-bottom: 2rem; border-color: rgba(6, 182, 212, 0.25);">
+                    <div class="panel-header" style="border-bottom: 1px solid var(--panel-border);">
+                        <h2 class="panel-title">
+                            <i class="fas fa-calendar-check" style="color: var(--accent-cyan); margin-right: 8px;"></i> Appointments Awaiting Acceptance
+                        </h2>
+                    </div>
+                    <div class="table-container">
+                        <table class="custom-table">
+                            <thead>
+                                <tr>
+                                    <th>Patient (Pet Profile)</th>
+                                    <th>Caretaker (Owner)</th>
+                                    <th>Date &amp; Time</th>
+                                    <th>Reason</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="doctor-appointments-awaiting-body">
+                                <tr><td colspan="5" style="text-align:center;" class="text-secondary"><i class="fas fa-spinner fa-spin"></i> Loading pending appointments...</td></tr>
                             </tbody>
                         </table>
                     </div>

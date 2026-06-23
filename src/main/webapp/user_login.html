@@ -76,6 +76,51 @@
                 </button>
             </form>
         </div>
+
+        <!-- Doctor Signup Form -->
+        <div id="form-doctor-signup-wrapper" class="auth-form-wrapper">
+            <form id="doctor-signup-form">
+                <div class="form-group" style="margin-bottom: 0.8rem;">
+                    <label for="doctor-signup-username">Username</label>
+                    <input type="text" id="doctor-signup-username" required placeholder="Choose a username">
+                </div>
+                <div class="form-group" style="margin-bottom: 0.8rem;">
+                    <label for="doctor-signup-fullname">Doctor Full Name</label>
+                    <input type="text" id="doctor-signup-fullname" required placeholder="Dr. First Last">
+                </div>
+                <div class="form-group" style="margin-bottom: 0.8rem;">
+                    <label for="doctor-signup-qualification">Qualification</label>
+                    <input type="text" id="doctor-signup-qualification" required placeholder="e.g. BVSc & AH, MVSc">
+                </div>
+                <div class="form-group" style="margin-bottom: 0.8rem;">
+                    <label for="doctor-signup-experience">Experience (Years)</label>
+                    <input type="number" id="doctor-signup-experience" required min="0" placeholder="Years of veterinary experience">
+                </div>
+                <div class="form-group" style="margin-bottom: 0.8rem;">
+                    <label for="doctor-signup-address">Clinic Address</label>
+                    <input type="text" id="doctor-signup-address" required placeholder="Enter clinic address">
+                </div>
+                <div class="form-group" style="margin-bottom: 0.8rem;">
+                    <label for="doctor-signup-email">Email Address</label>
+                    <input type="email" id="doctor-signup-email" required placeholder="doctor@clinic.com">
+                </div>
+                <div class="form-group" style="margin-bottom: 0.8rem;">
+                    <label for="doctor-signup-phone">Phone Number</label>
+                    <input type="tel" id="doctor-signup-phone" required placeholder="10-digit phone number">
+                </div>
+                <div class="form-group" style="margin-bottom: 0.8rem;">
+                    <label for="doctor-signup-certificate">Medical Course Certificate Details</label>
+                    <input type="text" id="doctor-signup-certificate" required placeholder="Enter certificate number / verification details">
+                </div>
+                <div class="form-group" style="margin-bottom: 1.4rem;">
+                    <label for="doctor-signup-password">Password</label>
+                    <input type="password" id="doctor-signup-password" required placeholder="Choose a secure password">
+                </div>
+                <button type="submit" class="btn-primary" style="width: 100%; justify-content: center; padding: 12px; background: linear-gradient(135deg, var(--accent-cyan) 0%, var(--accent-blue) 100%); box-shadow: 0 4px 15px rgba(6, 182, 212, 0.3);">
+                    <i class="fas fa-user-doctor"></i> Submit Vet Registration
+                </button>
+            </form>
+        </div>
     </div>
 
     <div id="toast-container" class="toast-container"></div>
@@ -122,8 +167,20 @@
                     submitBtn.style.boxShadow = "0 4px 15px rgba(6, 182, 212, 0.3)";
                     submitBtn.innerHTML = '<i class="fas fa-right-from-bracket"></i> Vet Login';
                 }
-                const authTabs = document.querySelector('.auth-tabs');
-                if (authTabs) authTabs.style.display = 'none';
+
+                // Customize Active Tab color to Cyan for Vet Portal
+                const styleSheet = document.createElement("style");
+                styleSheet.innerText = `
+                    .auth-tab.active {
+                        color: var(--accent-cyan) !important;
+                        border-bottom: 2px solid var(--accent-cyan) !important;
+                    }
+                `;
+                document.head.appendChild(styleSheet);
+
+                // Change signup tab text
+                const signupTab = document.getElementById('tab-signup');
+                if (signupTab) signupTab.textContent = "Vet Sign Up";
             }
         });
 
@@ -131,18 +188,24 @@
             const tabLogin = document.getElementById('tab-login');
             const tabSignup = document.getElementById('tab-signup');
             const formLogin = document.getElementById('form-login-wrapper');
-            const formSignup = document.getElementById('form-signup-wrapper');
+            
+            const params = new URLSearchParams(window.location.search);
+            const isVet = params.get('portal') === 'vet';
+            const formSignup = isVet ? document.getElementById('form-doctor-signup-wrapper') : document.getElementById('form-signup-wrapper');
+            const alternativeSignup = isVet ? document.getElementById('form-signup-wrapper') : document.getElementById('form-doctor-signup-wrapper');
 
             if (type === 'login') {
                 tabLogin.classList.add('active');
                 tabSignup.classList.remove('active');
                 formLogin.classList.add('active');
                 formSignup.classList.remove('active');
+                if (alternativeSignup) alternativeSignup.classList.remove('active');
             } else {
                 tabSignup.classList.add('active');
                 tabLogin.classList.remove('active');
                 formSignup.classList.add('active');
                 formLogin.classList.remove('active');
+                if (alternativeSignup) alternativeSignup.classList.remove('active');
             }
         }
 
@@ -198,6 +261,39 @@
                 if (data.success) {
                     showToast(data.message, 'success');
                     setTimeout(() => window.location.href = 'dashboard.html', 800);
+                } else {
+                    showToast(data.message, 'error');
+                }
+            } catch (err) {
+                showToast('Registration server error.', 'error');
+            }
+        });
+
+        // Doctor Signup Handler
+        document.getElementById('doctor-signup-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('doctor-signup-username').value;
+            const fullName = document.getElementById('doctor-signup-fullname').value;
+            const qualification = document.getElementById('doctor-signup-qualification').value;
+            const experience = document.getElementById('doctor-signup-experience').value;
+            const address = document.getElementById('doctor-signup-address').value;
+            const email = document.getElementById('doctor-signup-email').value;
+            const phoneNo = document.getElementById('doctor-signup-phone').value;
+            const certificate = document.getElementById('doctor-signup-certificate').value;
+            const password = document.getElementById('doctor-signup-password').value;
+
+            try {
+                const res = await fetch('/api/auth?action=signup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: `username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}&fullName=${encodeURIComponent(fullName)}&email=${encodeURIComponent(email)}&role=Doctor&qualification=${encodeURIComponent(qualification)}&experience=${encodeURIComponent(experience)}&address=${encodeURIComponent(address)}&phoneNo=${encodeURIComponent(phoneNo)}&certificate=${encodeURIComponent(certificate)}`
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    document.getElementById('doctor-signup-form').reset();
+                    setTimeout(() => switchAuthTab('login'), 2000);
                 } else {
                     showToast(data.message, 'error');
                 }

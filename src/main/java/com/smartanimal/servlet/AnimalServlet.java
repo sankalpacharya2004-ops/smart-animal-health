@@ -47,12 +47,21 @@ public class AnimalServlet extends HttpServlet {
                 int id = Integer.parseInt(idParam);
                 Animal animal = animalDAO.getAnimalById(id);
                 if (animal != null) {
-                    // Safety check: standard users can only view their own animals
-                    if (!"Admin".equalsIgnoreCase(user.getRole()) && !"Doctor".equalsIgnoreCase(user.getRole()) && (animal.getUserId() == null || animal.getUserId() != user.getUserId())) {
+                    // Safety check: verify user permissions
+                    boolean allowed = false;
+                    if ("Admin".equalsIgnoreCase(user.getRole())) {
+                        allowed = true;
+                    } else if ("Doctor".equalsIgnoreCase(user.getRole())) {
+                        allowed = animalDAO.isAnimalUnderDoctor(id, user.getUserId());
+                    } else { // User role
+                        allowed = (animal.getUserId() != null && animal.getUserId() == user.getUserId());
+                    }
+
+                    if (!allowed) {
                         response.setStatus(HttpServletResponse.SC_FORBIDDEN);
                         JsonObject error = new JsonObject();
                         error.addProperty("success", false);
-                        error.addProperty("message", "Forbidden. You do not own this profile.");
+                        error.addProperty("message", "Forbidden. You do not have permission to view this profile.");
                         response.getWriter().write(gson.toJson(error));
                         return;
                     }
@@ -69,8 +78,10 @@ public class AnimalServlet extends HttpServlet {
             }
         } else {
             List<Animal> list;
-            if ("Admin".equalsIgnoreCase(user.getRole()) || "Doctor".equalsIgnoreCase(user.getRole())) {
+            if ("Admin".equalsIgnoreCase(user.getRole())) {
                 list = animalDAO.getAllAnimals();
+            } else if ("Doctor".equalsIgnoreCase(user.getRole())) {
+                list = animalDAO.getAnimalsByDoctorId(user.getUserId());
             } else {
                 list = animalDAO.getAnimalsByUserId(user.getUserId());
             }

@@ -5,6 +5,7 @@ CREATE DATABASE IF NOT EXISTS animal_health_db CHARACTER SET utf8mb4 COLLATE utf
 USE animal_health_db;
 
 -- Drop tables if they exist (in reverse dependency order)
+DROP TABLE IF EXISTS appointments;
 DROP TABLE IF EXISTS vaccinations;
 DROP TABLE IF EXISTS health_assessments;
 DROP TABLE IF EXISTS symptoms;
@@ -81,6 +82,19 @@ CREATE TABLE vaccinations (
     notes TEXT NULL,
     created_date DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (animal_id) REFERENCES animals(animal_id) ON DELETE CASCADE
+);
+
+-- Table 6: appointments
+CREATE TABLE appointments (
+    appointment_id INT PRIMARY KEY AUTO_INCREMENT,
+    animal_id INT NOT NULL,
+    doctor_id INT NOT NULL,
+    appointment_date DATETIME NOT NULL,
+    status ENUM('Pending', 'Scheduled', 'Completed', 'Cancelled') DEFAULT 'Pending',
+    reason TEXT NULL,
+    created_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (animal_id) REFERENCES animals(animal_id) ON DELETE CASCADE,
+    FOREIGN KEY (doctor_id) REFERENCES users(user_id) ON DELETE CASCADE
 );
 
 -- Insert Demo/Seed Data
