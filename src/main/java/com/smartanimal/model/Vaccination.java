@@ -15,6 +15,8 @@ public class Vaccination {
 
     private String animalName;
     private String ownerName;
+    private Integer doctorId;
+    private String doctorName;
 
     public Vaccination() {}
 
@@ -107,5 +109,21 @@ public class Vaccination {
 
     public void setCreatedDate(Timestamp createdDate) {
         this.createdDate = createdDate;
+    }
+
+    public Integer getDoctorId() {
+        return doctorId;
+    }
+
+    public void setDoctorId(Integer doctorId) {
+        this.doctorId = doctorId;
+    }
+
+    public String getDoctorName() {
+        return doctorName;
+    }
+
+    public void setDoctorName(String doctorName) {
+        this.doctorName = doctorName;
     }
 }

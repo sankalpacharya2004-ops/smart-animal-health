@@ -59,11 +59,25 @@ public class DashboardServlet extends HttpServlet {
             }
 
             // 2. Pending/Overdue Vaccinations
-            String sqlVaccines = hasGlobalAccess 
-                ? "SELECT COUNT(*) FROM vaccinations v JOIN animals a ON v.animal_id = a.animal_id WHERE v.status IN ('Pending', 'Overdue')"
-                : "SELECT COUNT(*) FROM vaccinations v JOIN animals a ON v.animal_id = a.animal_id WHERE v.status IN ('Pending', 'Overdue') AND a.user_id = ?";
+            String sqlVaccines;
+            if ("Admin".equalsIgnoreCase(user.getRole())) {
+                sqlVaccines = "SELECT COUNT(*) FROM vaccinations v JOIN animals a ON v.animal_id = a.animal_id WHERE v.status IN ('Pending', 'Overdue')";
+            } else if ("Doctor".equalsIgnoreCase(user.getRole())) {
+                sqlVaccines = "SELECT COUNT(DISTINCT v.vaccination_id) FROM vaccinations v " +
+                              "JOIN animals a ON v.animal_id = a.animal_id " +
+                              "LEFT JOIN appointments ap ON a.animal_id = ap.animal_id " +
+                              "LEFT JOIN health_assessments h2 ON a.animal_id = h2.animal_id " +
+                              "WHERE v.status IN ('Pending', 'Overdue') AND (ap.doctor_id = ? OR h2.doctor_id = ?)";
+            } else {
+                sqlVaccines = "SELECT COUNT(*) FROM vaccinations v JOIN animals a ON v.animal_id = a.animal_id WHERE v.status IN ('Pending', 'Overdue') AND a.user_id = ?";
+            }
             try (PreparedStatement stmt = conn.prepareStatement(sqlVaccines)) {
-                if (!hasGlobalAccess) stmt.setInt(1, userId);
+                if ("Doctor".equalsIgnoreCase(user.getRole())) {
+                    stmt.setInt(1, userId);
+                    stmt.setInt(2, userId);
+                } else if (!hasGlobalAccess) {
+                    stmt.setInt(1, userId);
+                }
                 try (ResultSet rs = stmt.executeQuery()) {
                     if (rs.next()) {
                         dashboardData.addProperty("pendingVaccinations", rs.getInt(1));
@@ -86,21 +100,47 @@ public class DashboardServlet extends HttpServlet {
 
             // 4. Doctor Specific Counts
             if (hasGlobalAccess) {
+                boolean isAdmin = "Admin".equalsIgnoreCase(user.getRole());
+                
                 // Active High Risk Cases (no doctor override yet)
-                String sqlActiveHighRisk = "SELECT COUNT(*) FROM health_assessments WHERE risk_level = 'High' AND doctor_diagnosis IS NULL";
-                try (PreparedStatement stmt = conn.prepareStatement(sqlActiveHighRisk);
-                     ResultSet rs = stmt.executeQuery()) {
-                    if (rs.next()) {
-                        dashboardData.addProperty("activeHighRiskCases", rs.getInt(1));
+                String sqlActiveHighRisk = isAdmin 
+                    ? "SELECT COUNT(*) FROM health_assessments WHERE risk_level = 'High' AND doctor_diagnosis IS NULL"
+                    : "SELECT COUNT(DISTINCT h.assessment_id) FROM health_assessments h " +
+                      "JOIN animals a ON h.animal_id = a.animal_id " +
+                      "LEFT JOIN appointments ap ON a.animal_id = ap.animal_id " +
+                      "LEFT JOIN health_assessments h2 ON a.animal_id = h2.animal_id " +
+                      "WHERE h.risk_level = 'High' AND h.doctor_diagnosis IS NULL AND (ap.doctor_id = ? OR h2.doctor_id = ?)";
+                
+                try (PreparedStatement stmt = conn.prepareStatement(sqlActiveHighRisk)) {
+                    if (!isAdmin) {
+                        stmt.setInt(1, userId);
+                        stmt.setInt(2, userId);
+                    }
+                    try (ResultSet rs = stmt.executeQuery()) {
+                        if (rs.next()) {
+                            dashboardData.addProperty("activeHighRiskCases", rs.getInt(1));
+                        }
                     }
                 }
 
                 // Pending Consultations (no doctor override yet)
-                String sqlPendingConsultations = "SELECT COUNT(*) FROM health_assessments WHERE doctor_diagnosis IS NULL";
-                try (PreparedStatement stmt = conn.prepareStatement(sqlPendingConsultations);
-                     ResultSet rs = stmt.executeQuery()) {
-                    if (rs.next()) {
-                        dashboardData.addProperty("pendingConsultations", rs.getInt(1));
+                String sqlPendingConsultations = isAdmin 
+                    ? "SELECT COUNT(*) FROM health_assessments WHERE doctor_diagnosis IS NULL"
+                    : "SELECT COUNT(DISTINCT h.assessment_id) FROM health_assessments h " +
+                      "JOIN animals a ON h.animal_id = a.animal_id " +
+                      "LEFT JOIN appointments ap ON a.animal_id = ap.animal_id " +
+                      "LEFT JOIN health_assessments h2 ON a.animal_id = h2.animal_id " +
+                      "WHERE h.doctor_diagnosis IS NULL AND (ap.doctor_id = ? OR h2.doctor_id = ?)";
+                
+                try (PreparedStatement stmt = conn.prepareStatement(sqlPendingConsultations)) {
+                    if (!isAdmin) {
+                        stmt.setInt(1, userId);
+                        stmt.setInt(2, userId);
+                    }
+                    try (ResultSet rs = stmt.executeQuery()) {
+                        if (rs.next()) {
+                            dashboardData.addProperty("pendingConsultations", rs.getInt(1));
+                        }
                     }
                 }
             }
@@ -143,11 +183,26 @@ public class DashboardServlet extends HttpServlet {
 
             // 6. Upcoming Vaccinations (Limit 5)
             JsonArray vaccines = new JsonArray();
-            String sqlUpcomingVaccines = hasGlobalAccess
-                ? "SELECT v.*, a.name AS animal_name FROM vaccinations v JOIN animals a ON v.animal_id = a.animal_id WHERE v.status IN ('Pending', 'Overdue') ORDER BY v.scheduled_date ASC LIMIT 5"
-                : "SELECT v.*, a.name AS animal_name FROM vaccinations v JOIN animals a ON v.animal_id = a.animal_id WHERE v.status IN ('Pending', 'Overdue') AND a.user_id = ? ORDER BY v.scheduled_date ASC LIMIT 5";
+            String sqlUpcomingVaccines;
+            if ("Admin".equalsIgnoreCase(user.getRole())) {
+                sqlUpcomingVaccines = "SELECT v.*, a.name AS animal_name FROM vaccinations v JOIN animals a ON v.animal_id = a.animal_id WHERE v.status IN ('Pending', 'Overdue') ORDER BY v.scheduled_date ASC LIMIT 5";
+            } else if ("Doctor".equalsIgnoreCase(user.getRole())) {
+                sqlUpcomingVaccines = "SELECT DISTINCT v.*, a.name AS animal_name FROM vaccinations v " +
+                                      "JOIN animals a ON v.animal_id = a.animal_id " +
+                                      "LEFT JOIN appointments ap ON a.animal_id = ap.animal_id " +
+                                      "LEFT JOIN health_assessments h2 ON a.animal_id = h2.animal_id " +
+                                      "WHERE v.status IN ('Pending', 'Overdue') AND (ap.doctor_id = ? OR h2.doctor_id = ?) " +
+                                      "ORDER BY v.scheduled_date ASC LIMIT 5";
+            } else {
+                sqlUpcomingVaccines = "SELECT v.*, a.name AS animal_name FROM vaccinations v JOIN animals a ON v.animal_id = a.animal_id WHERE v.status IN ('Pending', 'Overdue') AND a.user_id = ? ORDER BY v.scheduled_date ASC LIMIT 5";
+            }
             try (PreparedStatement stmt = conn.prepareStatement(sqlUpcomingVaccines)) {
-                if (!hasGlobalAccess) stmt.setInt(1, userId);
+                if ("Doctor".equalsIgnoreCase(user.getRole())) {
+                    stmt.setInt(1, userId);
+                    stmt.setInt(2, userId);
+                } else if (!hasGlobalAccess) {
+                    stmt.setInt(1, userId);
+                }
                 try (ResultSet rs = stmt.executeQuery()) {
                     while (rs.next()) {
                         JsonObject obj = new JsonObject();

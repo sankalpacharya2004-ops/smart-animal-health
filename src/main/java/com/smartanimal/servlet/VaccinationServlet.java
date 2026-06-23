@@ -69,6 +69,7 @@ public class VaccinationServlet extends HttpServlet {
 
         String animalIdParam = request.getParameter("animalId");
         String idParam = request.getParameter("id");
+        String doctorIdParam = request.getParameter("doctorId");
         JsonObject jsonResponse = new JsonObject();
 
         if (idParam != null) {
@@ -95,6 +96,51 @@ public class VaccinationServlet extends HttpServlet {
                 response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             }
         } 
+        else if (doctorIdParam != null) {
+            try {
+                int doctorId = Integer.parseInt(doctorIdParam);
+                List<Vaccination> list;
+                boolean isAllAnimals = "all".equalsIgnoreCase(animalIdParam) || animalIdParam == null;
+
+                if (!isAllAnimals) {
+                    int animalId = Integer.parseInt(animalIdParam);
+                    Animal animal = animalDAO.getAnimalById(animalId);
+                    if (animal == null) {
+                        response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+                        jsonResponse.addProperty("success", false);
+                        jsonResponse.addProperty("message", "Animal not found.");
+                        response.getWriter().write(gson.toJson(jsonResponse));
+                        return;
+                    }
+
+                    if (!"Admin".equalsIgnoreCase(user.getRole()) && !"Doctor".equalsIgnoreCase(user.getRole()) && (animal.getUserId() == null || animal.getUserId() != user.getUserId())) {
+                        response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                        jsonResponse.addProperty("success", false);
+                        jsonResponse.addProperty("message", "Forbidden. You do not own this animal's records.");
+                        response.getWriter().write(gson.toJson(jsonResponse));
+                        return;
+                    }
+
+                    List<Vaccination> allAnimalVac = vaccinationDAO.getVaccinationsByAnimalId(animalId);
+                    List<Vaccination> filtered = new java.util.ArrayList<>();
+                    for (Vaccination v : allAnimalVac) {
+                        if (v.getDoctorId() != null && v.getDoctorId() == doctorId) {
+                            filtered.add(v);
+                        }
+                    }
+                    list = filtered;
+                } else {
+                    if ("Admin".equalsIgnoreCase(user.getRole()) || "Doctor".equalsIgnoreCase(user.getRole())) {
+                        list = vaccinationDAO.getVaccinationsByDoctorId(doctorId);
+                    } else {
+                        list = vaccinationDAO.getVaccinationsByDoctorIdAndUserId(doctorId, user.getUserId());
+                    }
+                }
+                response.getWriter().write(gson.toJson(list));
+            } catch (NumberFormatException e) {
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            }
+        }
         else if (animalIdParam != null) {
             try {
                 int animalId = Integer.parseInt(animalIdParam);
@@ -123,12 +169,17 @@ public class VaccinationServlet extends HttpServlet {
         } 
         else {
             if ("Admin".equalsIgnoreCase(user.getRole()) || "Doctor".equalsIgnoreCase(user.getRole())) {
-                List<Vaccination> list = vaccinationDAO.getAllVaccinationsWithDetails();
+                List<Vaccination> list;
+                if ("Admin".equalsIgnoreCase(user.getRole())) {
+                    list = vaccinationDAO.getAllVaccinationsWithDetails();
+                } else {
+                    list = vaccinationDAO.getVaccinationsForDoctorAnimals(user.getUserId());
+                }
                 response.getWriter().write(gson.toJson(list));
             } else {
                 response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
                 jsonResponse.addProperty("success", false);
-                jsonResponse.addProperty("message", "Missing parameter: id or animalId.");
+                jsonResponse.addProperty("message", "Missing parameter: id or animalId or doctorId.");
                 response.getWriter().write(gson.toJson(jsonResponse));
             }
         }
@@ -245,6 +296,13 @@ public class VaccinationServlet extends HttpServlet {
             if (body.has("vaccineName")) existing.setVaccineName(body.get("vaccineName").getAsString());
             if (body.has("scheduledDate")) existing.setScheduledDate(Date.valueOf(body.get("scheduledDate").getAsString()));
             if (body.has("notes")) existing.setNotes(body.get("notes").getAsString());
+            if (body.has("doctorId")) {
+                if (body.get("doctorId").isJsonNull() || body.get("doctorId").getAsString().trim().isEmpty()) {
+                    existing.setDoctorId(null);
+                } else {
+                    existing.setDoctorId(body.get("doctorId").getAsInt());
+                }
+            }
             
             if (body.has("administeredDate") && !body.get("administeredDate").isJsonNull() && !body.get("administeredDate").getAsString().trim().isEmpty()) {
                 existing.setAdministeredDate(Date.valueOf(body.get("administeredDate").getAsString()));

@@ -17,6 +17,11 @@ public class VaccinationDAO {
         vaccination.setStatus(rs.getString("status"));
         vaccination.setNotes(rs.getString("notes"));
         vaccination.setCreatedDate(rs.getTimestamp("created_date"));
+        
+        int docId = rs.getInt("doctor_id");
+        if (!rs.wasNull()) {
+            vaccination.setDoctorId(docId);
+        }
         return vaccination;
     }
 
@@ -31,14 +36,19 @@ public class VaccinationDAO {
     }
 
     public boolean addVaccination(Vaccination vaccination) {
-        String sql = "INSERT INTO vaccinations (animal_id, vaccine_name, scheduled_date, administered_date, status, notes) VALUES (?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO vaccinations (animal_id, doctor_id, vaccine_name, scheduled_date, administered_date, status, notes) VALUES (?, ?, ?, ?, ?, ?, ?)";
         try (Connection conn = DBConnection.getConnection()) {
             syncVaccinationStatuses(conn);
             try (PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
                 stmt.setInt(1, vaccination.getAnimalId());
-                stmt.setString(2, vaccination.getVaccineName());
-                stmt.setDate(3, vaccination.getScheduledDate());
-                stmt.setDate(4, vaccination.getAdministeredDate());
+                if (vaccination.getDoctorId() != null) {
+                    stmt.setInt(2, vaccination.getDoctorId());
+                } else {
+                    stmt.setNull(2, java.sql.Types.INTEGER);
+                }
+                stmt.setString(3, vaccination.getVaccineName());
+                stmt.setDate(4, vaccination.getScheduledDate());
+                stmt.setDate(5, vaccination.getAdministeredDate());
                 
                 // If scheduled date is in the past and no admin date is set, default to Overdue, else Pending
                 String finalStatus = vaccination.getStatus();
@@ -49,8 +59,8 @@ public class VaccinationDAO {
                         finalStatus = "Pending";
                     }
                 }
-                stmt.setString(5, finalStatus);
-                stmt.setString(6, vaccination.getNotes());
+                stmt.setString(6, finalStatus);
+                stmt.setString(7, vaccination.getNotes());
 
                 int affectedRows = stmt.executeUpdate();
                 if (affectedRows > 0) {
@@ -70,14 +80,20 @@ public class VaccinationDAO {
 
     public List<Vaccination> getVaccinationsByAnimalId(int animalId) {
         List<Vaccination> list = new ArrayList<>();
-        String sql = "SELECT * FROM vaccinations WHERE animal_id = ? ORDER BY scheduled_date ASC";
+        String sql = "SELECT v.*, d.full_name AS doctor_name " +
+                     "FROM vaccinations v " +
+                     "LEFT JOIN users d ON v.doctor_id = d.user_id " +
+                     "WHERE v.animal_id = ? " +
+                     "ORDER BY v.scheduled_date ASC";
         try (Connection conn = DBConnection.getConnection()) {
             syncVaccinationStatuses(conn);
             try (PreparedStatement stmt = conn.prepareStatement(sql)) {
                 stmt.setInt(1, animalId);
                 try (ResultSet rs = stmt.executeQuery()) {
                     while (rs.next()) {
-                        list.add(extractVaccination(rs));
+                        Vaccination v = extractVaccination(rs);
+                        v.setDoctorName(rs.getString("doctor_name"));
+                        list.add(v);
                     }
                 }
             }
@@ -88,14 +104,19 @@ public class VaccinationDAO {
     }
 
     public Vaccination getVaccinationById(int vaccinationId) {
-        String sql = "SELECT * FROM vaccinations WHERE vaccination_id = ?";
+        String sql = "SELECT v.*, d.full_name AS doctor_name " +
+                     "FROM vaccinations v " +
+                     "LEFT JOIN users d ON v.doctor_id = d.user_id " +
+                     "WHERE v.vaccination_id = ?";
         try (Connection conn = DBConnection.getConnection()) {
             syncVaccinationStatuses(conn);
             try (PreparedStatement stmt = conn.prepareStatement(sql)) {
                 stmt.setInt(1, vaccinationId);
                 try (ResultSet rs = stmt.executeQuery()) {
                     if (rs.next()) {
-                        return extractVaccination(rs);
+                        Vaccination v = extractVaccination(rs);
+                        v.setDoctorName(rs.getString("doctor_name"));
+                        return v;
                     }
                 }
             }
@@ -106,7 +127,7 @@ public class VaccinationDAO {
     }
 
     public boolean updateVaccination(Vaccination vaccination) {
-        String sql = "UPDATE vaccinations SET vaccine_name = ?, scheduled_date = ?, administered_date = ?, status = ?, notes = ? WHERE vaccination_id = ?";
+        String sql = "UPDATE vaccinations SET vaccine_name = ?, scheduled_date = ?, administered_date = ?, status = ?, notes = ?, doctor_id = ? WHERE vaccination_id = ?";
         try (Connection conn = DBConnection.getConnection()) {
             syncVaccinationStatuses(conn);
             try (PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -115,7 +136,12 @@ public class VaccinationDAO {
                 stmt.setDate(3, vaccination.getAdministeredDate());
                 stmt.setString(4, vaccination.getStatus());
                 stmt.setString(5, vaccination.getNotes());
-                stmt.setInt(6, vaccination.getVaccinationId());
+                if (vaccination.getDoctorId() != null) {
+                    stmt.setInt(6, vaccination.getDoctorId());
+                } else {
+                    stmt.setNull(6, java.sql.Types.INTEGER);
+                }
+                stmt.setInt(7, vaccination.getVaccinationId());
                 return stmt.executeUpdate() > 0;
             }
         } catch (SQLException e) {
@@ -151,7 +177,7 @@ public class VaccinationDAO {
 
     public List<Vaccination> getAllVaccinationsWithDetails() {
         List<Vaccination> list = new ArrayList<>();
-        String sql = "SELECT v.*, a.name AS animal_name, a.owner_name FROM vaccinations v JOIN animals a ON v.animal_id = a.animal_id ORDER BY v.scheduled_date ASC";
+        String sql = "SELECT v.*, a.name AS animal_name, a.owner_name, d.full_name AS doctor_name FROM vaccinations v JOIN animals a ON v.animal_id = a.animal_id LEFT JOIN users d ON v.doctor_id = d.user_id ORDER BY v.scheduled_date ASC";
         try (Connection conn = DBConnection.getConnection()) {
             syncVaccinationStatuses(conn);
             try (PreparedStatement stmt = conn.prepareStatement(sql);
@@ -160,7 +186,96 @@ public class VaccinationDAO {
                     Vaccination v = extractVaccination(rs);
                     v.setAnimalName(rs.getString("animal_name"));
                     v.setOwnerName(rs.getString("owner_name"));
+                    v.setDoctorName(rs.getString("doctor_name"));
                     list.add(v);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+
+    public List<Vaccination> getVaccinationsByDoctorId(int doctorId) {
+        List<Vaccination> list = new ArrayList<>();
+        String sql = "SELECT v.*, a.name AS animal_name, a.owner_name, d.full_name AS doctor_name " +
+                     "FROM vaccinations v " +
+                     "JOIN animals a ON v.animal_id = a.animal_id " +
+                     "LEFT JOIN users d ON v.doctor_id = d.user_id " +
+                     "WHERE v.doctor_id = ? " +
+                     "ORDER BY v.scheduled_date ASC";
+        try (Connection conn = DBConnection.getConnection()) {
+            syncVaccinationStatuses(conn);
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                stmt.setInt(1, doctorId);
+                try (ResultSet rs = stmt.executeQuery()) {
+                    while (rs.next()) {
+                        Vaccination v = extractVaccination(rs);
+                        v.setAnimalName(rs.getString("animal_name"));
+                        v.setOwnerName(rs.getString("owner_name"));
+                        v.setDoctorName(rs.getString("doctor_name"));
+                        list.add(v);
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+
+    public List<Vaccination> getVaccinationsByDoctorIdAndUserId(int doctorId, int userId) {
+        List<Vaccination> list = new ArrayList<>();
+        String sql = "SELECT v.*, a.name AS animal_name, a.owner_name, d.full_name AS doctor_name " +
+                     "FROM vaccinations v " +
+                     "JOIN animals a ON v.animal_id = a.animal_id " +
+                     "LEFT JOIN users d ON v.doctor_id = d.user_id " +
+                     "WHERE v.doctor_id = ? AND a.user_id = ? " +
+                     "ORDER BY v.scheduled_date ASC";
+        try (Connection conn = DBConnection.getConnection()) {
+            syncVaccinationStatuses(conn);
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                stmt.setInt(1, doctorId);
+                stmt.setInt(2, userId);
+                try (ResultSet rs = stmt.executeQuery()) {
+                    while (rs.next()) {
+                        Vaccination v = extractVaccination(rs);
+                        v.setAnimalName(rs.getString("animal_name"));
+                        v.setOwnerName(rs.getString("owner_name"));
+                        v.setDoctorName(rs.getString("doctor_name"));
+                        list.add(v);
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+
+    public List<Vaccination> getVaccinationsForDoctorAnimals(int doctorId) {
+        List<Vaccination> list = new ArrayList<>();
+        String sql = "SELECT DISTINCT v.*, a.name AS animal_name, a.owner_name, d.full_name AS doctor_name " +
+                     "FROM vaccinations v " +
+                     "JOIN animals a ON v.animal_id = a.animal_id " +
+                     "LEFT JOIN users d ON v.doctor_id = d.user_id " +
+                     "LEFT JOIN appointments ap ON a.animal_id = ap.animal_id " +
+                     "LEFT JOIN health_assessments ha ON a.animal_id = ha.animal_id " +
+                     "WHERE ap.doctor_id = ? OR ha.doctor_id = ? " +
+                     "ORDER BY v.scheduled_date ASC";
+        try (Connection conn = DBConnection.getConnection()) {
+            syncVaccinationStatuses(conn);
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                stmt.setInt(1, doctorId);
+                stmt.setInt(2, doctorId);
+                try (ResultSet rs = stmt.executeQuery()) {
+                    while (rs.next()) {
+                        Vaccination v = extractVaccination(rs);
+                        v.setAnimalName(rs.getString("animal_name"));
+                        v.setOwnerName(rs.getString("owner_name"));
+                        v.setDoctorName(rs.getString("doctor_name"));
+                        list.add(v);
+                    }
                 }
             }
         } catch (SQLException e) {

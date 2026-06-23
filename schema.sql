@@ -75,13 +75,15 @@ CREATE TABLE health_assessments (
 CREATE TABLE vaccinations (
     vaccination_id INT PRIMARY KEY AUTO_INCREMENT,
     animal_id INT NOT NULL,
+    doctor_id INT NULL,
     vaccine_name VARCHAR(100) NOT NULL,
     scheduled_date DATE NOT NULL,
     administered_date DATE NULL,
     status ENUM('Pending', 'Completed', 'Overdue') DEFAULT 'Pending',
     notes TEXT NULL,
     created_date DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (animal_id) REFERENCES animals(animal_id) ON DELETE CASCADE
+    FOREIGN KEY (animal_id) REFERENCES animals(animal_id) ON DELETE CASCADE,
+    FOREIGN KEY (doctor_id) REFERENCES users(user_id) ON DELETE SET NULL
 );
 
 -- Table 6: appointments

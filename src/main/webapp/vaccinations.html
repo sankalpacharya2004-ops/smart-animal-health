@@ -144,6 +144,13 @@
                             <input type="date" id="vac-date" required>
                         </div>
 
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                            <label for="vaccination-doctor-select">Assign Doctor (Optional)</label>
+                            <select id="vaccination-doctor-select">
+                                <option value="">-- No Doctor Assigned --</option>
+                            </select>
+                        </div>
+
                         <div class="form-group" style="margin-bottom: 1.5rem;">
                             <label for="vac-notes">Notes / Vet Location</label>
                             <textarea id="vac-notes" rows="3" placeholder="e.g. Administered at City Vet Clinic, 2nd booster dose"></textarea>
@@ -163,10 +170,13 @@
                         </h2>
                     </div>
                     
-                    <!-- Filtering dropdown -->
-                    <div style="padding: 0 1.5rem 1rem 1.5rem; border-bottom: 1px solid var(--panel-border);">
-                        <select id="filter-animal-select" style="width: 100%;">
+                    <!-- Filtering dropdowns -->
+                    <div style="padding: 0 1.5rem 1rem 1.5rem; border-bottom: 1px solid var(--panel-border); display: flex; gap: 1rem;">
+                        <select id="filter-animal-select" style="flex: 1;">
                             <option value="">Choose an animal to view schedule...</option>
+                        </select>
+                        <select id="filter-doctor-select" style="flex: 1;">
+                            <option value="">Filter by Doctor (All)...</option>
                         </select>
                     </div>
 

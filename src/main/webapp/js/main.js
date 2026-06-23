@@ -439,6 +439,8 @@ async function initSymptoms() {
 async function initVaccinations() {
     const filterSelect = document.getElementById('filter-animal-select');
     const formSelect = document.getElementById('vaccination-animal-select');
+    const filterDocSelect = document.getElementById('filter-doctor-select');
+    const formDocSelect = document.getElementById('vaccination-doctor-select');
     const form = document.getElementById('vaccination-form');
     const isAdmin = document.getElementById('sidebar-user-role')?.textContent === 'Admin';
 
@@ -462,15 +464,42 @@ async function initVaccinations() {
         showToast("Error loading animal dropdowns: " + err.message, "error");
     }
 
+    // Populate doctor dropdowns
+    try {
+        const docRes = await fetch('/api/appointments?action=getDoctors');
+        if (docRes.ok) {
+            const doctors = await docRes.json();
+            if (formDocSelect) {
+                formDocSelect.innerHTML = '<option value="">-- No Doctor Assigned --</option>';
+                doctors.forEach(d => {
+                    formDocSelect.innerHTML += `<option value="${d.userId}">Dr. ${d.fullName || d.username}</option>`;
+                });
+            }
+            if (filterDocSelect) {
+                filterDocSelect.innerHTML = '<option value="">Filter by Doctor (All)...</option>';
+                doctors.forEach(d => {
+                    filterDocSelect.innerHTML += `<option value="${d.userId}">Dr. ${d.fullName || d.username}</option>`;
+                });
+            }
+        }
+    } catch (err) {
+        console.error("Error loading doctor dropdowns:", err);
+    }
+
     if (isAdmin) {
         filterSelect.value = 'all';
-        await loadVaccinations('all');
+        await loadVaccinations('all', '');
     }
 
     // Load table when filter changes
     filterSelect.addEventListener('change', () => {
-        loadVaccinations(filterSelect.value);
+        loadVaccinations(filterSelect.value, filterDocSelect ? filterDocSelect.value : '');
     });
+    if (filterDocSelect) {
+        filterDocSelect.addEventListener('change', () => {
+            loadVaccinations(filterSelect.value, filterDocSelect.value);
+        });
+    }
 
     // Schedule form submit
     if (form) {
@@ -482,6 +511,7 @@ async function initVaccinations() {
                 return;
             }
 
+            const doctorId = formDocSelect ? formDocSelect.value : '';
             const payload = {
                 animalId: parseInt(animalId),
                 vaccineName: document.getElementById('vac-name').value,
@@ -489,6 +519,9 @@ async function initVaccinations() {
                 notes: document.getElementById('vac-notes').value,
                 status: 'Pending'
             };
+            if (doctorId) {
+                payload.doctorId = parseInt(doctorId);
+            }
 
             try {
                 const res = await fetch('/api/vaccinations', {
@@ -502,11 +535,13 @@ async function initVaccinations() {
                     showToast(data.message, 'success');
                     form.reset();
                     // If filter matches scheduled animal or is all, reload
+                    const curDoctorId = filterDocSelect ? filterDocSelect.value : '';
                     if (filterSelect.value === animalId || filterSelect.value === 'all') {
-                        loadVaccinations(filterSelect.value);
+                        loadVaccinations(filterSelect.value, curDoctorId);
                     } else {
                         filterSelect.value = animalId;
-                        loadVaccinations(animalId);
+                        if (filterDocSelect) filterDocSelect.value = '';
+                        loadVaccinations(animalId, '');
                     }
                 } else {
                     showToast(data.message, 'error');
@@ -518,30 +553,44 @@ async function initVaccinations() {
     }
 }
 
-async function loadVaccinations(animalId) {
+async function loadVaccinations(animalId, doctorId = '') {
     const tbody = document.getElementById('vaccinations-body');
     if (!tbody) return;
 
-    if (!animalId || animalId === '') {
-        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;" class="text-secondary">Please select an animal above to inspect schedules.</td></tr>`;
+    if ((!animalId || animalId === '') && (!doctorId || doctorId === '')) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;" class="text-secondary">Please select an animal or doctor above to inspect schedules.</td></tr>`;
         return;
     }
 
     try {
-        const url = animalId === 'all' ? '/api/vaccinations' : `/api/vaccinations?animalId=${animalId}`;
+        let url = '/api/vaccinations?';
+        const params = [];
+        if (animalId && animalId !== 'all') {
+            params.push(`animalId=${animalId}`);
+        }
+        if (doctorId) {
+            params.push(`doctorId=${doctorId}`);
+        }
+        url += params.join('&');
+
+        if (params.length === 0) {
+            url = '/api/vaccinations';
+        }
+
         const res = await fetch(url);
         const list = await res.json();
         tbody.innerHTML = '';
 
         const thead = tbody.closest('table').querySelector('thead tr');
-        const isAll = (animalId === 'all');
-        const totalCols = isAll ? 7 : 5;
+        const showAnimalCols = (!animalId || animalId === 'all' || animalId === '');
+        const totalCols = showAnimalCols ? 8 : 6;
 
-        if (isAll) {
+        if (showAnimalCols) {
             thead.innerHTML = `
                 <th>Animal</th>
                 <th>Caretaker</th>
                 <th>Vaccine</th>
+                <th>Doctor</th>
                 <th>Scheduled Date</th>
                 <th>Administered</th>
                 <th>Status</th>
@@ -550,6 +599,7 @@ async function loadVaccinations(animalId) {
         } else {
             thead.innerHTML = `
                 <th>Vaccine</th>
+                <th>Doctor</th>
                 <th>Scheduled Date</th>
                 <th>Administered</th>
                 <th>Status</th>
@@ -562,20 +612,21 @@ async function loadVaccinations(animalId) {
                 const tr = document.createElement('tr');
                 const statusBadge = `<span class="badge ${v.status.toLowerCase()}">${v.status}</span>`;
                 const adminDateStr = v.administeredDate ? v.administeredDate : '—';
+                const docStr = v.doctorName ? `Dr. ${v.doctorName}` : '—';
                 
                 let actionBtn = '';
                 if (v.status !== 'Completed') {
                     actionBtn = `
-                        <button class="btn-primary" onclick="markVaccineComplete(${v.vaccinationId}, '${animalId}')" style="padding:4px 8px; font-size:12px; font-weight:500; border-radius:6px; box-shadow:none;">
+                        <button class="btn-primary" onclick="markVaccineComplete(${v.vaccinationId}, '${animalId || ''}', '${doctorId}')" style="padding:4px 8px; font-size:12px; font-weight:500; border-radius:6px; box-shadow:none;">
                             <i class="fas fa-check"></i> Complete
                         </button>
                     `;
                 }
                 
                 let animalCells = '';
-                if (isAll) {
+                if (showAnimalCols) {
                     animalCells = `
-                        <td><strong>${v.animalName}</strong></td>
+                        <td><strong>${v.animalName || '—'}</strong></td>
                         <td>${v.ownerName || '—'}</td>
                     `;
                 }
@@ -583,13 +634,14 @@ async function loadVaccinations(animalId) {
                 tr.innerHTML = `
                     ${animalCells}
                     <td><strong>${v.vaccineName}</strong></td>
+                    <td>${docStr}</td>
                     <td>${v.scheduledDate}</td>
                     <td>${adminDateStr}</td>
                     <td>${statusBadge}</td>
                     <td>
                         <div style="display:flex; gap:6px; align-items:center;">
                             ${actionBtn}
-                            <button class="btn-danger" onclick="deleteVaccine(${v.vaccinationId}, '${animalId}')" style="padding:4px 8px; font-size:12px; font-weight:500; border-radius:6px;">
+                            <button class="btn-danger" onclick="deleteVaccine(${v.vaccinationId}, '${animalId || ''}', '${doctorId}')" style="padding:4px 8px; font-size:12px; font-weight:500; border-radius:6px;">
                                 <i class="fas fa-trash"></i>
                             </button>
                         </div>
@@ -605,7 +657,7 @@ async function loadVaccinations(animalId) {
     }
 }
 
-async function markVaccineComplete(vacId, animalId) {
+async function markVaccineComplete(vacId, animalId, doctorId) {
     const today = new Date().toISOString().split('T')[0];
     try {
         const res = await fetch('/api/vaccinations', {
@@ -620,7 +672,7 @@ async function markVaccineComplete(vacId, animalId) {
         const data = await res.json();
         if (data.success) {
             showToast(data.message, 'success');
-            loadVaccinations(animalId);
+            loadVaccinations(animalId, doctorId);
         } else {
             showToast(data.message, 'error');
         }
@@ -629,14 +681,14 @@ async function markVaccineComplete(vacId, animalId) {
     }
 }
 
-async function deleteVaccine(vacId, animalId) {
+async function deleteVaccine(vacId, animalId, doctorId) {
     if (!confirm("Remove this vaccination schedule?")) return;
     try {
         const res = await fetch(`/api/vaccinations?id=${vacId}`, { method: 'DELETE' });
         const data = await res.json();
         if (data.success) {
             showToast(data.message, 'success');
-            loadVaccinations(animalId);
+            loadVaccinations(animalId, doctorId);
         } else {
             showToast(data.message, 'error');
         }

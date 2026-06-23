@@ -57,7 +57,12 @@ public class AssessmentServlet extends HttpServlet {
                 response.getWriter().write(gson.toJson(jsonResponse));
                 return;
             }
-            List<HealthAssessment> list = assessmentDAO.getPendingConsultations();
+            List<HealthAssessment> list;
+            if ("Admin".equalsIgnoreCase(user.getRole())) {
+                list = assessmentDAO.getPendingConsultations();
+            } else {
+                list = assessmentDAO.getPendingConsultationsByDoctorId(user.getUserId());
+            }
             response.getWriter().write(gson.toJson(list));
         }
         else if (highRiskParam != null && Boolean.parseBoolean(highRiskParam)) {
@@ -68,7 +73,12 @@ public class AssessmentServlet extends HttpServlet {
                 response.getWriter().write(gson.toJson(jsonResponse));
                 return;
             }
-            List<HealthAssessment> list = assessmentDAO.getActiveHighRiskCases();
+            List<HealthAssessment> list;
+            if ("Admin".equalsIgnoreCase(user.getRole())) {
+                list = assessmentDAO.getActiveHighRiskCases();
+            } else {
+                list = assessmentDAO.getActiveHighRiskCasesByDoctorId(user.getUserId());
+            }
             response.getWriter().write(gson.toJson(list));
         }
         else if (animalIdParam != null) {

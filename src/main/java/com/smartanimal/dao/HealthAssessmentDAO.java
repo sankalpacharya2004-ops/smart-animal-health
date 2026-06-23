@@ -211,4 +211,54 @@ public class HealthAssessmentDAO {
         }
         return list;
     }
+
+    public List<HealthAssessment> getPendingConsultationsByDoctorId(int doctorId) {
+        List<HealthAssessment> list = new ArrayList<>();
+        String sql = "SELECT DISTINCT h.*, a.name AS animal_name, a.owner_name, u.full_name AS doctor_name " +
+                     "FROM health_assessments h " +
+                     "JOIN animals a ON h.animal_id = a.animal_id " +
+                     "LEFT JOIN users u ON h.doctor_id = u.user_id " +
+                     "LEFT JOIN appointments ap ON a.animal_id = ap.animal_id " +
+                     "LEFT JOIN health_assessments h2 ON a.animal_id = h2.animal_id " +
+                     "WHERE h.doctor_diagnosis IS NULL AND (ap.doctor_id = ? OR h2.doctor_id = ?) " +
+                     "ORDER BY h.assessment_date DESC";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, doctorId);
+            stmt.setInt(2, doctorId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    list.add(extractAssessment(rs));
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+
+    public List<HealthAssessment> getActiveHighRiskCasesByDoctorId(int doctorId) {
+        List<HealthAssessment> list = new ArrayList<>();
+        String sql = "SELECT DISTINCT h.*, a.name AS animal_name, a.owner_name, u.full_name AS doctor_name " +
+                     "FROM health_assessments h " +
+                     "JOIN animals a ON h.animal_id = a.animal_id " +
+                     "LEFT JOIN users u ON h.doctor_id = u.user_id " +
+                     "LEFT JOIN appointments ap ON a.animal_id = ap.animal_id " +
+                     "LEFT JOIN health_assessments h2 ON a.animal_id = h2.animal_id " +
+                     "WHERE h.risk_level = 'High' AND h.doctor_diagnosis IS NULL AND (ap.doctor_id = ? OR h2.doctor_id = ?) " +
+                     "ORDER BY h.assessment_date DESC";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, doctorId);
+            stmt.setInt(2, doctorId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    list.add(extractAssessment(rs));
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
 }
