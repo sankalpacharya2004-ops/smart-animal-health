@@ -1,10 +1,17 @@
 package com.smartanimal.servlet;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.smartanimal.dao.AnimalDAO;
+import com.smartanimal.dao.VaccinationDAO;
 import com.smartanimal.model.Animal;
 import com.smartanimal.model.User;
+import com.smartanimal.model.Vaccination;
+import com.smartanimal.model.VaccineRecommendation;
+import com.smartanimal.util.VaccineAdvisor;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -13,10 +20,12 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.sql.Date;
 import java.util.List;
 
 public class AnimalServlet extends HttpServlet {
     private final AnimalDAO animalDAO = new AnimalDAO();
+    private final VaccinationDAO vaccinationDAO = new VaccinationDAO();
     private final Gson gson = new Gson();
 
     private User getAuthenticatedUser(HttpServletRequest request, HttpServletResponse response) throws IOException {
@@ -40,6 +49,23 @@ public class AnimalServlet extends HttpServlet {
 
         User user = getAuthenticatedUser(request, response);
         if (user == null) return;
+
+        String action = request.getParameter("action");
+        if ("suggestVaccines".equalsIgnoreCase(action)) {
+            String species = request.getParameter("species");
+            String ageParam = request.getParameter("age");
+            String animalType = request.getParameter("animalType");
+            String breed = request.getParameter("breed");
+            Integer age = null;
+            if (ageParam != null && !ageParam.trim().isEmpty()) {
+                try {
+                    age = Integer.parseInt(ageParam);
+                } catch (NumberFormatException ignored) {}
+            }
+            List<VaccineRecommendation> recs = VaccineAdvisor.getRecommendations(species, age, animalType, breed);
+            response.getWriter().write(gson.toJson(recs));
+            return;
+        }
 
         String idParam = request.getParameter("id");
         if (idParam != null) {
@@ -98,8 +124,19 @@ public class AnimalServlet extends HttpServlet {
         User user = getAuthenticatedUser(request, response);
         if (user == null) return;
 
-        BufferedReader reader = request.getReader();
-        Animal animal = gson.fromJson(reader, Animal.class);
+        JsonObject root;
+        try {
+            root = JsonParser.parseReader(request.getReader()).getAsJsonObject();
+        } catch (Exception e) {
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            JsonObject err = new JsonObject();
+            err.addProperty("success", false);
+            err.addProperty("message", "Invalid JSON payload.");
+            response.getWriter().write(gson.toJson(err));
+            return;
+        }
+
+        Animal animal = gson.fromJson(root, Animal.class);
         JsonObject jsonResponse = new JsonObject();
 
         if (animal == null || animal.getName() == null || animal.getName().trim().isEmpty() ||
@@ -117,6 +154,8 @@ public class AnimalServlet extends HttpServlet {
         if (animal.getOwnerName() == null || animal.getOwnerName().trim().isEmpty()) {
             animal.setOwnerName(user.getFullName() != null ? user.getFullName() : user.getUsername());
         }
+
+        int scheduledCount = 0;
 
         if (animal.getAnimalId() > 0) {
             // Update mode
@@ -141,9 +180,22 @@ public class AnimalServlet extends HttpServlet {
                 existing.setContactNumber(animal.getContactNumber());
 
                 if (animalDAO.updateAnimal(existing)) {
+                    // Check if any vaccinations were selected for scheduling
+                    if (root.has("autoScheduleVaccines") && root.get("autoScheduleVaccines").isJsonArray()) {
+                        scheduledCount = scheduleVaccinesForAnimal(existing.getAnimalId(), root.getAsJsonArray("autoScheduleVaccines"));
+                    }
+
+                    List<VaccineRecommendation> recs = VaccineAdvisor.getRecommendations(existing.getSpecies(), existing.getAge(), existing.getAnimalType(), existing.getBreed());
+
                     jsonResponse.addProperty("success", true);
-                    jsonResponse.addProperty("message", "Animal profile updated successfully.");
+                    String msg = "Animal profile updated successfully.";
+                    if (scheduledCount > 0) {
+                        msg += " Added " + scheduledCount + " recommended vaccine(s) to schedule.";
+                    }
+                    jsonResponse.addProperty("message", msg);
+                    jsonResponse.addProperty("scheduledVaccinesCount", scheduledCount);
                     jsonResponse.add("animal", gson.toJsonTree(existing));
+                    jsonResponse.add("recommendations", gson.toJsonTree(recs));
                 } else {
                     jsonResponse.addProperty("success", false);
                     jsonResponse.addProperty("message", "Database error updating profile.");
@@ -153,9 +205,22 @@ public class AnimalServlet extends HttpServlet {
             // Creation mode
             animal.setUserId(user.getUserId());
             if (animalDAO.addAnimal(animal)) {
+                // Auto-schedule selected vaccinations
+                if (root.has("autoScheduleVaccines") && root.get("autoScheduleVaccines").isJsonArray()) {
+                    scheduledCount = scheduleVaccinesForAnimal(animal.getAnimalId(), root.getAsJsonArray("autoScheduleVaccines"));
+                }
+
+                List<VaccineRecommendation> recs = VaccineAdvisor.getRecommendations(animal.getSpecies(), animal.getAge(), animal.getAnimalType(), animal.getBreed());
+
                 jsonResponse.addProperty("success", true);
-                jsonResponse.addProperty("message", "Animal profile registered successfully.");
+                String msg = "Animal profile registered successfully!";
+                if (scheduledCount > 0) {
+                    msg += " Automatically scheduled " + scheduledCount + " age-appropriate vaccination(s).";
+                }
+                jsonResponse.addProperty("message", msg);
+                jsonResponse.addProperty("scheduledVaccinesCount", scheduledCount);
                 jsonResponse.add("animal", gson.toJsonTree(animal));
+                jsonResponse.add("recommendations", gson.toJsonTree(recs));
             } else {
                 jsonResponse.addProperty("success", false);
                 jsonResponse.addProperty("message", "Database error registering profile.");
@@ -163,6 +228,42 @@ public class AnimalServlet extends HttpServlet {
         }
 
         response.getWriter().write(gson.toJson(jsonResponse));
+    }
+
+    private int scheduleVaccinesForAnimal(int animalId, JsonArray vaccinesArray) {
+        int count = 0;
+        for (JsonElement elem : vaccinesArray) {
+            if (!elem.isJsonObject()) continue;
+            JsonObject obj = elem.getAsJsonObject();
+            String vaccineName = obj.has("vaccineName") ? obj.get("vaccineName").getAsString() : null;
+            if (vaccineName == null || vaccineName.trim().isEmpty()) continue;
+
+            String dateStr = obj.has("scheduledDate") ? obj.get("scheduledDate").getAsString() : null;
+            Date scheduledDate;
+            if (dateStr != null && !dateStr.trim().isEmpty()) {
+                try {
+                    scheduledDate = Date.valueOf(dateStr);
+                } catch (IllegalArgumentException e) {
+                    scheduledDate = Date.valueOf(java.time.LocalDate.now().plusDays(14));
+                }
+            } else {
+                scheduledDate = Date.valueOf(java.time.LocalDate.now().plusDays(14));
+            }
+
+            String notes = obj.has("notes") && !obj.get("notes").isJsonNull() ? obj.get("notes").getAsString() : "Age-based recommended vaccination";
+
+            Vaccination v = new Vaccination();
+            v.setAnimalId(animalId);
+            v.setVaccineName(vaccineName);
+            v.setScheduledDate(scheduledDate);
+            v.setStatus("Pending");
+            v.setNotes(notes);
+
+            if (vaccinationDAO.addVaccination(v)) {
+                count++;
+            }
+        }
+        return count;
     }
 
     // Delete animal profile

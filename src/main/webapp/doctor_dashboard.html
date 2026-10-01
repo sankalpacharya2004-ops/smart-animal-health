@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,6 +8,7 @@
     <link rel="stylesheet" href="css/styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
+
 <body>
 
     <!-- Ambient glowing backgrounds -->
@@ -14,9 +16,10 @@
     <div class="ambient-glow glow-bottom-right"></div>
 
     <div class="app-container">
-        
+
         <!-- Sidebar Navigation -->
-        <aside class="sidebar glass-panel" style="border-radius: 0; border: none; border-right: 1px solid var(--panel-border);">
+        <aside class="sidebar glass-panel"
+            style="border-radius: 0; border: none; border-right: 1px solid var(--panel-border);">
             <div class="brand-section">
                 <div class="brand-logo">
                     <i class="fas fa-heart-pulse"></i>
@@ -103,7 +106,8 @@
                         <span id="sidebar-user-role" class="user-role">Doctor</span>
                     </div>
                 </div>
-                <button onclick="logout()" class="btn-secondary" style="width: 100%; justify-content: center; padding: 8px;">
+                <button onclick="logout()" class="btn-secondary"
+                    style="width: 100%; justify-content: center; padding: 8px;">
                     <i class="fas fa-right-from-bracket"></i> Sign Out
                 </button>
             </div>
@@ -114,7 +118,8 @@
             <header class="header-container">
                 <div>
                     <h1 class="page-title">Doctor Overwatch</h1>
-                    <p class="page-subtitle">Inspect pending cases, run veterinary overrides, and record vaccination administrations.</p>
+                    <p class="page-subtitle">Inspect pending cases, run veterinary overrides, and record vaccination
+                        administrations.</p>
                 </div>
             </header>
 
@@ -153,12 +158,13 @@
 
             <!-- Overwatch Tables -->
             <section class="dashboard-grid" style="grid-template-columns: 1fr;">
-                
+
                 <!-- Pending Consultations & Reviews -->
                 <div class="glass-panel" style="display: flex; flex-direction: column; margin-bottom: 2rem;">
                     <div class="panel-header" style="border-bottom: 1px solid var(--panel-border);">
                         <h2 class="panel-title">
-                            <i class="fas fa-user-doctor" style="color: var(--accent-cyan);"></i> Pending Clinical Consultations
+                            <i class="fas fa-user-doctor" style="color: var(--accent-cyan);"></i> Pending Clinical
+                            Consultations
                         </h2>
                     </div>
                     <div class="table-container">
@@ -174,17 +180,22 @@
                                 </tr>
                             </thead>
                             <tbody id="doctor-pending-table-body">
-                                <tr><td colspan="6" style="text-align:center;" class="text-secondary"><i class="fas fa-spinner fa-spin"></i> Loading pending cases...</td></tr>
+                                <tr>
+                                    <td colspan="6" style="text-align:center;" class="text-secondary"><i
+                                            class="fas fa-spinner fa-spin"></i> Loading pending cases...</td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
 
                 <!-- Appointments Awaiting Acceptance -->
-                <div class="glass-panel" style="display: flex; flex-direction: column; margin-bottom: 2rem; border-color: rgba(6, 182, 212, 0.25);">
+                <div class="glass-panel"
+                    style="display: flex; flex-direction: column; margin-bottom: 2rem; border-color: rgba(6, 182, 212, 0.25);">
                     <div class="panel-header" style="border-bottom: 1px solid var(--panel-border);">
                         <h2 class="panel-title">
-                            <i class="fas fa-calendar-check" style="color: var(--accent-cyan); margin-right: 8px;"></i> Appointments Awaiting Acceptance
+                            <i class="fas fa-calendar-check" style="color: var(--accent-cyan); margin-right: 8px;"></i>
+                            Appointments Awaiting Acceptance
                         </h2>
                     </div>
                     <div class="table-container">
@@ -199,7 +210,10 @@
                                 </tr>
                             </thead>
                             <tbody id="doctor-appointments-awaiting-body">
-                                <tr><td colspan="5" style="text-align:center;" class="text-secondary"><i class="fas fa-spinner fa-spin"></i> Loading pending appointments...</td></tr>
+                                <tr>
+                                    <td colspan="5" style="text-align:center;" class="text-secondary"><i
+                                            class="fas fa-spinner fa-spin"></i> Loading pending appointments...</td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
@@ -209,7 +223,8 @@
                 <div class="glass-panel" style="display: flex; flex-direction: column;">
                     <div class="panel-header" style="border-bottom: 1px solid var(--panel-border);">
                         <h2 class="panel-title">
-                            <i class="fas fa-syringe" style="color: var(--accent-emerald);"></i> Vaccination Administration Queue
+                            <i class="fas fa-syringe" style="color: var(--accent-emerald);"></i> Vaccination
+                            Administration Queue
                         </h2>
                     </div>
                     <div class="table-container">
@@ -225,7 +240,10 @@
                                 </tr>
                             </thead>
                             <tbody id="doctor-vaccines-table-body">
-                                <tr><td colspan="6" style="text-align:center;" class="text-secondary"><i class="fas fa-spinner fa-spin"></i> Loading vaccinations...</td></tr>
+                                <tr>
+                                    <td colspan="6" style="text-align:center;" class="text-secondary"><i
+                                            class="fas fa-spinner fa-spin"></i> Loading vaccinations...</td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
@@ -239,7 +257,9 @@
     <div id="override-modal" class="modal-overlay">
         <div class="modal-container glass-panel" style="padding: 0;">
             <div class="modal-header">
-                <h3 class="modal-title"><i class="fas fa-file-signature" style="color: var(--accent-cyan); margin-right: 8px;"></i> Clinical Override &amp; Diagnosis</h3>
+                <h3 class="modal-title"><i class="fas fa-file-signature"
+                        style="color: var(--accent-cyan); margin-right: 8px;"></i> Clinical Override &amp; Diagnosis
+                </h3>
                 <button class="modal-close" onclick="closeOverrideModal()">&times;</button>
             </div>
             <form id="override-form" onsubmit="saveClinicalOverride(event)">
@@ -262,16 +282,20 @@
                         <div style="margin-top: 8px;" id="override-auto-risk"></div>
                     </div>
                     <div class="form-group full-width">
-                        <label>Professional Veterinary Diagnosis <span style="color: var(--accent-rose);">*</span></label>
-                        <input type="text" id="override-diagnosis" required placeholder="Enter final clinical diagnosis...">
+                        <label>Professional Veterinary Diagnosis <span
+                                style="color: var(--accent-rose);">*</span></label>
+                        <input type="text" id="override-diagnosis" required
+                            placeholder="Enter final clinical diagnosis...">
                     </div>
                     <div class="form-group full-width">
                         <label>Treatment Notes</label>
-                        <textarea id="override-notes" rows="3" placeholder="Provide clinic intervention and observations..."></textarea>
+                        <textarea id="override-notes" rows="3"
+                            placeholder="Provide clinic intervention and observations..."></textarea>
                     </div>
                     <div class="form-group full-width">
                         <label>Prescriptions &amp; Dosages</label>
-                        <textarea id="override-prescription" rows="3" placeholder="List medications, dosage amounts, and frequencies..."></textarea>
+                        <textarea id="override-prescription" rows="3"
+                            placeholder="List medications, dosage amounts, and frequencies..."></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -286,7 +310,8 @@
     <div id="vaccinate-modal" class="modal-overlay">
         <div class="modal-container glass-panel" style="padding: 0; max-width: 500px;">
             <div class="modal-header">
-                <h3 class="modal-title"><i class="fas fa-syringe" style="color: var(--accent-emerald); margin-right: 8px;"></i> Record Administration</h3>
+                <h3 class="modal-title"><i class="fas fa-syringe"
+                        style="color: var(--accent-emerald); margin-right: 8px;"></i> Record Administration</h3>
                 <button class="modal-close" onclick="closeVaccinateModal()">&times;</button>
             </div>
             <form id="vaccinate-form" onsubmit="saveVaccineAdministration(event)">
@@ -306,12 +331,15 @@
                     </div>
                     <div class="form-group">
                         <label>Veterinary Notes</label>
-                        <textarea id="vaccinate-notes" rows="3" placeholder="Specify batch number, vet notes, or booster instructions..."></textarea>
+                        <textarea id="vaccinate-notes" rows="3"
+                            placeholder="Specify batch number, vet notes, or booster instructions..."></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn-secondary" onclick="closeVaccinateModal()">Cancel</button>
-                    <button type="submit" class="btn-primary" style="background: linear-gradient(135deg, var(--accent-emerald) 0%, var(--accent-blue) 100%); box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);">Submit Record</button>
+                    <button type="submit" class="btn-primary"
+                        style="background: linear-gradient(135deg, var(--accent-emerald) 0%, var(--accent-blue) 100%); box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);">Submit
+                        Record</button>
                 </div>
             </form>
         </div>
@@ -323,4 +351,5 @@
     <script src="js/auth.js"></script>
     <script src="js/main.js"></script>
 </body>
+
 </html>

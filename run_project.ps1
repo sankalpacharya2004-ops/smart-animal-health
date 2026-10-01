@@ -42,6 +42,11 @@ if (!(Test-Path $tomcatHome)) {
     Write-Output "Tomcat is already installed."
 }
 
+# Ensure setenv.bat exists in Tomcat bin with detected JAVA_HOME
+$setenvPath = "$tomcatHome\bin\setenv.bat"
+$setenvContent = "@echo off`r`nset `"JAVA_HOME=$env:JAVA_HOME`"`r`nset `"JRE_HOME=$env:JAVA_HOME`"`r`n"
+Set-Content -Path $setenvPath -Value $setenvContent -Encoding ASCII
+
 # 3. Clean existing webapps inside Tomcat (remove default ROOT to deploy ours)
 $webappsDir = "$tomcatHome\webapps"
 Write-Output "Deploying application to Tomcat webapps as ROOT.war..."
@@ -55,7 +60,8 @@ if (Test-Path "$webappsDir\ROOT.war") {
 # Copy and rename our WAR file to ROOT.war so it runs at http://localhost:8080/
 Copy-Item $warPath -Destination "$webappsDir\ROOT.war"
 
-# 4. Start Tomcat in a new window (will inherit $env:JAVA_HOME)
+# 4. Start Tomcat in a new window (will inherit $env:JAVA_HOME and $env:CATALINA_HOME)
+$env:CATALINA_HOME = $tomcatHome
 Write-Output "Starting Apache Tomcat in a separate window..."
 Start-Process -FilePath "$tomcatHome\bin\startup.bat" -WorkingDirectory "$tomcatHome\bin"
 

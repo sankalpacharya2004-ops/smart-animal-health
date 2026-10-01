@@ -11,6 +11,9 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
+import com.smartanimal.model.VaccineRecommendation;
+import com.smartanimal.util.VaccineAdvisor;
+import java.util.List;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -107,14 +110,12 @@ public class DashboardServlet extends HttpServlet {
                     ? "SELECT COUNT(*) FROM health_assessments WHERE risk_level = 'High' AND doctor_diagnosis IS NULL"
                     : "SELECT COUNT(DISTINCT h.assessment_id) FROM health_assessments h " +
                       "JOIN animals a ON h.animal_id = a.animal_id " +
-                      "LEFT JOIN appointments ap ON a.animal_id = ap.animal_id " +
-                      "LEFT JOIN health_assessments h2 ON a.animal_id = h2.animal_id " +
-                      "WHERE h.risk_level = 'High' AND h.doctor_diagnosis IS NULL AND (ap.doctor_id = ? OR h2.doctor_id = ?)";
+                      "JOIN appointments ap ON a.animal_id = ap.animal_id " +
+                      "WHERE h.risk_level = 'High' AND h.doctor_diagnosis IS NULL AND ap.doctor_id = ? AND ap.status IN ('Pending', 'Scheduled')";
                 
                 try (PreparedStatement stmt = conn.prepareStatement(sqlActiveHighRisk)) {
                     if (!isAdmin) {
                         stmt.setInt(1, userId);
-                        stmt.setInt(2, userId);
                     }
                     try (ResultSet rs = stmt.executeQuery()) {
                         if (rs.next()) {
@@ -128,14 +129,12 @@ public class DashboardServlet extends HttpServlet {
                     ? "SELECT COUNT(*) FROM health_assessments WHERE doctor_diagnosis IS NULL"
                     : "SELECT COUNT(DISTINCT h.assessment_id) FROM health_assessments h " +
                       "JOIN animals a ON h.animal_id = a.animal_id " +
-                      "LEFT JOIN appointments ap ON a.animal_id = ap.animal_id " +
-                      "LEFT JOIN health_assessments h2 ON a.animal_id = h2.animal_id " +
-                      "WHERE h.doctor_diagnosis IS NULL AND (ap.doctor_id = ? OR h2.doctor_id = ?)";
+                      "JOIN appointments ap ON a.animal_id = ap.animal_id " +
+                      "WHERE h.doctor_diagnosis IS NULL AND ap.doctor_id = ? AND ap.status IN ('Pending', 'Scheduled')";
                 
                 try (PreparedStatement stmt = conn.prepareStatement(sqlPendingConsultations)) {
                     if (!isAdmin) {
                         stmt.setInt(1, userId);
-                        stmt.setInt(2, userId);
                     }
                     try (ResultSet rs = stmt.executeQuery()) {
                         if (rs.next()) {
@@ -217,6 +216,87 @@ public class DashboardServlet extends HttpServlet {
                 }
             }
             dashboardData.add("upcomingVaccinations", vaccines);
+
+            // 7. Age-Based Vaccination Recommendations for User Animals
+            JsonArray animalRecsArray = new JsonArray();
+            String sqlUserAnimals = hasGlobalAccess 
+                ? "SELECT animal_id, name, species, breed, age, animal_type, owner_name FROM animals ORDER BY animal_id DESC LIMIT 10"
+                : "SELECT animal_id, name, species, breed, age, animal_type, owner_name FROM animals WHERE user_id = ? ORDER BY animal_id DESC";
+
+            try (PreparedStatement stmt = conn.prepareStatement(sqlUserAnimals)) {
+                if (!hasGlobalAccess) stmt.setInt(1, userId);
+                try (ResultSet rs = stmt.executeQuery()) {
+                    while (rs.next()) {
+                        int anId = rs.getInt("animal_id");
+                        String anName = rs.getString("name");
+                        String anSpecies = rs.getString("species");
+                        String anBreed = rs.getString("breed");
+                        int anAge = rs.getInt("age");
+                        boolean wasAgeNull = rs.wasNull();
+                        Integer ageObj = wasAgeNull ? null : anAge;
+                        String anType = rs.getString("animal_type");
+                        String ownerName = rs.getString("owner_name");
+
+                        List<VaccineRecommendation> recs = VaccineAdvisor.getRecommendations(anSpecies, ageObj, anType, anBreed);
+                        
+                        // Query existing scheduled/completed vaccines for this animal
+                        List<String> existingNames = new java.util.ArrayList<>();
+                        try (PreparedStatement vacStmt = conn.prepareStatement("SELECT vaccine_name FROM vaccinations WHERE animal_id = ?")) {
+                            vacStmt.setInt(1, anId);
+                            try (ResultSet vacRs = vacStmt.executeQuery()) {
+                                while (vacRs.next()) {
+                                    existingNames.add(vacRs.getString("vaccine_name").toLowerCase());
+                                }
+                            }
+                        }
+
+                        JsonObject anObj = new JsonObject();
+                        anObj.addProperty("animalId", anId);
+                        anObj.addProperty("name", anName);
+                        anObj.addProperty("species", anSpecies);
+                        anObj.addProperty("breed", anBreed);
+                        anObj.addProperty("age", ageObj);
+                        anObj.addProperty("animalType", anType);
+                        anObj.addProperty("ownerName", ownerName);
+                        
+                        String stage = recs.isEmpty() ? "General" : recs.get(0).getStage();
+                        anObj.addProperty("stage", stage);
+
+                        JsonArray recList = new JsonArray();
+                        int dueCount = 0;
+                        for (VaccineRecommendation rec : recs) {
+                            JsonObject rObj = new JsonObject();
+                            rObj.addProperty("vaccineName", rec.getVaccineName());
+                            rObj.addProperty("shortName", rec.getShortName());
+                            rObj.addProperty("priority", rec.getPriority());
+                            rObj.addProperty("stage", rec.getStage());
+                            rObj.addProperty("suggestedDate", rec.getSuggestedDate() != null ? rec.getSuggestedDate().toString() : "");
+                            rObj.addProperty("frequency", rec.getFrequency());
+                            rObj.addProperty("description", rec.getDescription());
+                            rObj.addProperty("defaultNotes", rec.getDefaultNotes());
+                            
+                            boolean isScheduled = false;
+                            for (String exName : existingNames) {
+                                if (exName.contains(rec.getShortName().toLowerCase()) || 
+                                    rec.getVaccineName().toLowerCase().contains(exName) || 
+                                    exName.equalsIgnoreCase(rec.getVaccineName())) {
+                                    isScheduled = true;
+                                    break;
+                                }
+                            }
+                            rObj.addProperty("isScheduled", isScheduled);
+                            if (!isScheduled) {
+                                dueCount++;
+                            }
+                            recList.add(rObj);
+                        }
+                        anObj.addProperty("dueCount", dueCount);
+                        anObj.add("recommendations", recList);
+                        animalRecsArray.add(anObj);
+                    }
+                }
+            }
+            dashboardData.add("animalRecommendations", animalRecsArray);
 
             response.getWriter().write(gson.toJson(dashboardData));
 

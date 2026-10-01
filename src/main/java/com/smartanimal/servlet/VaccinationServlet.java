@@ -11,6 +11,8 @@ import com.smartanimal.dao.VaccinationDAO;
 import com.smartanimal.model.Animal;
 import com.smartanimal.model.User;
 import com.smartanimal.model.Vaccination;
+import com.smartanimal.model.VaccineRecommendation;
+import com.smartanimal.util.VaccineAdvisor;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -67,10 +69,41 @@ public class VaccinationServlet extends HttpServlet {
         User user = getAuthenticatedUser(request, response);
         if (user == null) return;
 
+        String action = request.getParameter("action");
         String animalIdParam = request.getParameter("animalId");
         String idParam = request.getParameter("id");
         String doctorIdParam = request.getParameter("doctorId");
         JsonObject jsonResponse = new JsonObject();
+
+        if ("suggest".equalsIgnoreCase(action)) {
+            String species = request.getParameter("species");
+            String ageParam = request.getParameter("age");
+            String animalType = request.getParameter("animalType");
+            String breed = request.getParameter("breed");
+            Integer age = null;
+            if (ageParam != null && !ageParam.trim().isEmpty()) {
+                try {
+                    age = Integer.parseInt(ageParam);
+                } catch (NumberFormatException ignored) {}
+            }
+
+            if (animalIdParam != null && !animalIdParam.trim().isEmpty()) {
+                try {
+                    int animalId = Integer.parseInt(animalIdParam);
+                    Animal a = animalDAO.getAnimalById(animalId);
+                    if (a != null) {
+                        species = a.getSpecies();
+                        age = a.getAge();
+                        animalType = a.getAnimalType();
+                        breed = a.getBreed();
+                    }
+                } catch (NumberFormatException ignored) {}
+            }
+
+            List<VaccineRecommendation> recommendations = VaccineAdvisor.getRecommendations(species, age, animalType, breed);
+            response.getWriter().write(gson.toJson(recommendations));
+            return;
+        }
 
         if (idParam != null) {
             try {

@@ -196,6 +196,38 @@
                     </div>
                 </div>
 
+                <!-- Live Age-Based Vaccination Advisor Panel -->
+                <div class="vaccine-advisor-box" id="modal-vaccine-advisor-box" style="margin: 0 1.5rem 1.5rem 1.5rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-wand-magic-sparkles" style="color: var(--accent-cyan); font-size: 16px;"></i>
+                            <strong style="color: #fff; font-size: 14px;">Age-Based Vaccination Advisor</strong>
+                        </div>
+                        <span id="modal-stage-badge" class="badge" style="background: rgba(56, 189, 248, 0.15); color: var(--accent-cyan); border: 1px solid rgba(56, 189, 248, 0.3);">
+                            Select Species &amp; Age
+                        </span>
+                    </div>
+                    <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px;">
+                        Suggested vaccines tailored specifically for this animal's species and life stage. Check the vaccines you want to schedule:
+                    </p>
+                    
+                    <div id="modal-vaccine-suggestions" class="vaccine-suggestion-list">
+                        <div style="text-align: center; padding: 1rem; font-size: 12px; color: var(--text-secondary);">
+                            <i class="fas fa-paw" style="margin-right: 6px;"></i> Enter species and age to preview recommended immunization roadmap.
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 12px; padding-top: 8px; border-top: 1px solid rgba(255, 255, 255, 0.08); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                        <label style="display: inline-flex; align-items: center; gap: 8px; font-size: 12px; cursor: pointer; color: #e2e8f0; font-weight: 500;">
+                            <input type="checkbox" id="auto-schedule-vaccines-check" checked style="accent-color: var(--accent-cyan); width: 16px; height: 16px;">
+                            <span>⚡ Automatically add checked vaccines to schedule upon saving</span>
+                        </label>
+                        <button type="button" id="btn-select-all-vac" class="btn-secondary" style="padding: 4px 10px; font-size: 11px;">
+                            <i class="fas fa-check-double"></i> Select All
+                        </button>
+                    </div>
+                </div>
+
                 <div class="modal-footer">
                     <button type="button" id="btn-cancel-modal" class="btn-secondary">Cancel</button>
                     <button type="submit" class="btn-primary">Save Profile</button>
@@ -204,8 +236,94 @@
         </div>
     </div>
 
+    <!-- Vaccine Advice & Roadmap Modal for Animal Card -->
+    <div id="vaccine-advice-modal" class="modal-overlay">
+        <div class="glass-panel modal-container" style="max-width: 650px;">
+            <div class="modal-header">
+                <div>
+                    <h2 class="modal-title" style="display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-shield-virus" style="color: var(--accent-cyan);"></i>
+                        <span id="advice-modal-animal-name">Animal</span>'s Vaccine Roadmap
+                    </h2>
+                    <p id="advice-modal-subtitle" style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">
+                        Age &amp; Species Clinical Immunization Schedule
+                    </p>
+                </div>
+                <button id="advice-modal-close-btn" class="modal-close">&times;</button>
+            </div>
+            <div style="padding: 1.5rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding: 12px; background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 10px;">
+                    <div>
+                        <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-secondary);">Current Life Stage</div>
+                        <div id="advice-modal-stage-title" style="font-weight: 700; font-size: 15px; color: #fff; margin-top: 2px;">Juvenile / Adult</div>
+                    </div>
+                    <button id="btn-schedule-all-advice" class="btn-primary" style="padding: 8px 14px; font-size: 13px;">
+                        <i class="fas fa-calendar-plus"></i> Schedule All Due
+                    </button>
+                </div>
+                
+                <div id="advice-modal-progress" style="margin-bottom: 12px; display: none;"></div>
+
+                <h4 style="font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">
+                    Recommended Vaccine Protocol
+                </h4>
+                <div id="advice-modal-list" class="vaccine-suggestion-list" style="max-height: 320px;">
+                    <!-- Dynamically populated -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <a href="vaccinations.html" class="btn-secondary" style="font-size: 13px; text-decoration: none;">
+                    <i class="fas fa-arrow-up-right-from-square"></i> Open Full Vaccination Planner
+                </a>
+                <button type="button" id="advice-modal-ok-btn" class="btn-primary">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Post-Registration Success & Vaccine Roadmap Modal -->
+    <div id="post-registration-modal" class="modal-overlay">
+        <div class="glass-panel modal-container" style="max-width: 620px;">
+            <div class="modal-header" style="border-bottom: 1px solid rgba(16, 185, 129, 0.3); background: rgba(16, 185, 129, 0.08);">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="width: 38px; height: 38px; border-radius: 50%; background: linear-gradient(135deg, var(--accent-emerald), var(--accent-cyan)); display: flex; align-items: center; justify-content: center; font-size: 18px; color: #fff;">
+                        <i class="fas fa-circle-check"></i>
+                    </div>
+                    <div>
+                        <h2 class="modal-title" id="post-reg-title" style="color: #fff; font-size: 18px;">Animal Registered Successfully!</h2>
+                        <p id="post-reg-subtitle" style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">
+                            Age-tailored immunization roadmap generated for your pet.
+                        </p>
+                    </div>
+                </div>
+                <button id="post-reg-close-btn" class="modal-close">&times;</button>
+            </div>
+            <div style="padding: 1.5rem;">
+                <div id="post-reg-summary-box" style="padding: 12px; background: rgba(255,255,255,0.03); border: 1px solid var(--panel-border); border-radius: 10px; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <div style="font-size: 12px; color: var(--text-secondary);">Animal Profile</div>
+                        <div id="post-reg-animal-info" style="font-weight: 700; font-size: 15px; color: #fff; margin-top: 2px;">Buddy (Dog, 3 Years)</div>
+                    </div>
+                    <span id="post-reg-stage-badge" class="stage-tag">Adult Stage</span>
+                </div>
+
+                <h4 style="font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">
+                    <i class="fas fa-shield-virus" style="color: var(--accent-cyan); margin-right: 6px;"></i> Recommended Immunization Roadmap
+                </h4>
+                <div id="post-reg-roadmap-list" class="vaccine-suggestion-list" style="max-height: 260px;">
+                    <!-- Dynamically populated -->
+                </div>
+            </div>
+            <div class="modal-footer" style="justify-content: space-between;">
+                <a id="post-reg-planner-btn" href="vaccinations.html" class="btn-secondary" style="font-size: 13px; text-decoration: none;">
+                    <i class="fas fa-calendar-check"></i> Go to Vaccinations Planner
+                </a>
+                <button type="button" id="post-reg-done-btn" class="btn-primary">View Animal in Registry</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Scripts -->
     <script src="js/auth.js"></script>
-    <script src="js/main.js"></script>
+    <script src="js/main.js?v=3"></script>
 </body>
 </html>

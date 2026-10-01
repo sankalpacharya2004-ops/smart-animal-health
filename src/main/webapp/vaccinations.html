@@ -134,6 +134,23 @@
                             </select>
                         </div>
 
+                        <!-- Smart Age-Based Vaccine Quick Pick Chips -->
+                        <div id="vaccine-quick-picks-container" style="display: none; margin-bottom: 1rem; padding: 12px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 12px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);">
+                            <!-- Interactive Age Immunization Guide & Roadmap Banner -->
+                            <div class="post-reg-banner" id="vaccine-roadmap-banner" style="margin-bottom: 12px; padding: 10px; border-radius: 8px; border: 1px solid rgba(6, 182, 212, 0.2); background: rgba(6, 182, 212, 0.05); display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <i class="fas fa-route" style="color: var(--accent-cyan); font-size: 16px;"></i>
+                                    <div>
+                                        <div style="font-size: 12px; font-weight: 700; color: #fff;">Age Immunization Guide &amp; Roadmap</div>
+                                        <div id="vaccine-roadmap-banner-desc" style="font-size: 10px; color: var(--text-secondary);">Core vaccines recommended for this life stage.</div>
+                                    </div>
+                                </div>
+                                <span id="vac-animal-stage-badge" class="badge recommended" style="font-size: 11px;">Stage</span>
+                            </div>
+                            <p style="font-size: 11px; color: var(--text-secondary); margin-bottom: 8px;">Click any recommended vaccine to auto-fill details:</p>
+                            <div id="vaccine-quick-picks-chips" class="quick-picks-container" style="margin-bottom: 0;"></div>
+                        </div>
+
                         <div class="form-group" style="margin-bottom: 1rem;">
                             <label for="vac-name">Vaccine Name *</label>
                             <input type="text" id="vac-name" required placeholder="e.g. Rabies, DHPP booster">
@@ -203,6 +220,6 @@
 
     <!-- Scripts -->
     <script src="js/auth.js"></script>
-    <script src="js/main.js?v=2"></script>
+    <script src="js/main.js?v=3"></script>
 </body>
 </html>
